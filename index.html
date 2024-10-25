@@ -23,6 +23,8 @@
 			}  
 		
 			.img-item {  
+				position: relative;  
+				display: inline-block; /* 或者其他布局方式 */ 
 				border: 1px solid rgba(0, 0, 0, 0.8);  
 				padding: 20px;  
 				width: auto; /* 让div根据内容自动调整宽度，但img会覆盖这个设置 */  
@@ -39,9 +41,19 @@
 				float: right;
 				height: 20px;
 			}
+			
+			
+			.copy-btn {  
+				position: absolute;  
+				top: 1px; /* 根据需要调整 */  
+				right: 1px; /* 根据需要调整 */  
+				padding: 5px 10px;  
+				cursor: pointer;  
+			}
 		</style>
 	</head>
 	<body>
+		<!-- <script src="./renderer.js"></script> -->
 		<h1 style="text-align: center;">欢迎使用图片检索工具</h1>
 		<p>
 			请选择扫描文件夹路径：<span id="file-path" ></span>
@@ -53,30 +65,37 @@
 		
 		<div class="grid-img">
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
 			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了">
+				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+				<button class="copy-btn">复制</button>  
 			</div>
-			
 		</div>
 		<div class="page-turn">
 			<button id="forward" style="height: inherit;display: flex; align-items: center;"><</button>

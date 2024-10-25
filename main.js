@@ -129,6 +129,7 @@ function isImageFile(file) {
 		".jpg",
 		".jpeg",
 		".png",
+        ".gif",
 		/*, ".gif", ".bmp", ".svg" */
 	];
 	const ext = path.extname(file).toLowerCase();

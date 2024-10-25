@@ -1,6 +1,23 @@
 // 这个脚本用来添加dom
 document.addEventListener("DOMContentLoaded", async () => {
 	console.log("Script loaded and DOM fully parsed and ready");
+    // 添加复制功能
+    const copyButtons = document.querySelectorAll('.copy-btn');  
+    copyButtons.forEach(button => {  
+        button.addEventListener('click', async () => {  
+            const img = button.previousElementSibling; // 获取相邻的 img 元素  
+            if (img && img.tagName === 'IMG') {  
+                try {  
+                    await copyImageToClipboard(img.src);  
+                    alert('Image copied to clipboard!');  
+                } catch (err) {  
+                    console.error('Could not copy image: ', err);  
+                }  
+            }  
+        });  
+    });  
+  
+    
 	// 初始化图片
 	await window.electron.refresh();
 	// 加载上次的路径
@@ -91,3 +108,65 @@ document.addEventListener("DOMContentLoaded", async () => {
 			document.getElementById("page-num").innerHTML = page;
 		});
 });
+// 复制到粘贴板
+// async function copyImageToClipboard(imageUrl) {  
+//     const response = await fetch(imageUrl);  
+//     const contentType = response.headers.get('Content-Type') || 'image/png'; // 默认使用 PNG 作为回退  
+//     console.log('查看类型', contentType);
+
+//     // 检查是否是支持的图像类型  
+//     const isSupportedImageType = contentType.startsWith('image/');  
+//     if (!isSupportedImageType) {  
+//         throw new Error('Unsupported image type');  
+//     }  
+
+//     const blob = await response.blob();
+
+//     // 确保将 blob 的类型设置为 image/jpeg
+//     const item = new ClipboardItem({ 'image/jpeg': blob });  
+
+//     // 写入剪贴板  
+//     await navigator.clipboard.write([item]);  
+// }  
+// 通过 Canvas，我们可以将图像绘制到画布上，然后将其转换为支持的格式（如 PNG），这样就能顺利地复制到剪贴板。
+async function copyImageToClipboard(imageUrl) {  
+    const response = await fetch(imageUrl);  
+    const contentType = response.headers.get('Content-Type') || 'image/png';  
+    const isSupportedImageType = contentType.startsWith('image/');  
+    if (!isSupportedImageType) {  
+        throw new Error('Unsupported image type');  
+    }  
+
+    const blob = await response.blob(); // 获取图像的 Blob 对象
+
+    const imgElement = new Image(); // 创建 Image 对象
+    imgElement.src = URL.createObjectURL(blob); // 将 Blob 转为 URL
+
+    return new Promise((resolve, reject) => {
+        imgElement.onload = async () => {
+            const canvas = document.createElement('canvas'); // 创建 Canvas
+            const ctx = canvas.getContext('2d'); // 获取 Canvas 上下文
+            
+            if (contentType === 'image/gif') {
+                // 处理 GIF，直接使用 GIF Blob
+                const item = new ClipboardItem({ 'image/gif': blob });  // 使用 GIF 格式
+                await navigator.clipboard.write([item]); // 写入剪贴板
+                resolve();
+            } else {
+                // 处理 JPG/JPEG/PNG，转换为 PNG
+                canvas.width = imgElement.width; // 设置宽度
+                canvas.height = imgElement.height; // 设置高度
+                ctx.drawImage(imgElement, 0, 0); // 将图像绘制到 Canvas
+
+                // 转换为 Blob，使用 'image/png' 作为 MIME 类型
+                canvas.toBlob(async (newBlob) => {
+                    const item = new ClipboardItem({ 'image/png': newBlob });  // 使用 PNG 格式
+                    await navigator.clipboard.write([item]); // 写入剪贴板
+                    resolve(); // Promise 成功
+                }, 'image/png');
+            }
+        };
+
+        imgElement.onerror = reject; // 处理错误
+    });
+}
