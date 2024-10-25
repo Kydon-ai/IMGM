@@ -2,25 +2,88 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
-		<meta
+		<!-- 下面这个设置居然会影响grid布局 -->
+		<!-- <meta
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'"
 		/>
 		<meta
 			http-equiv="X-Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'"
-		/>
+		/> -->
 		<title>LQD图片读取工具</title>
 		<!-- <script src="renderer.js"></script> -->
 		<script src="dom.js"></script>
+		<style>  
+			.grid-img {  
+				display: grid;  
+				grid-template-columns: auto auto auto auto ; /* 使用repeat函数创建4列，每列等宽 */  
+				gap: 10px; /* 设置网格项之间的间距 */  
+				padding: 10px;  
+			}  
 		
+			.img-item {  
+				border: 1px solid rgba(0, 0, 0, 0.8);  
+				padding: 20px;  
+				width: auto; /* 让div根据内容自动调整宽度，但img会覆盖这个设置 */  
+				height: 180px; /* 同样，让div高度自动，但img的高度会被object-fit控制 */  
+			}  
+		
+			.img-item img {  
+				width: 100%;  
+				height: 100%;  
+				object-fit: cover ; /* 使用cover确保图片覆盖整个容器，同时保持比例 */  
+			}  
+			.page-turn {
+				display: flex;
+				float: right;
+				height: 20px;
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Hello World!</h1>
-		We are using Node.js <span id="node-version"></span>, Chromium
-		<span id="chrome-version"></span>, and Electron
-		<span id="electron-version"></span>.
+		<h1 style="text-align: center;">欢迎使用图片检索工具</h1>
+		<p>
+			请选择扫描文件夹路径：<span id="file-path" ></span>
+		</p> 
 		<button id="select-folder">选择文件夹</button>
+		<button id="clear-path">清空路径</button>
+		<button id="start-search">开始搜索</button>
+		<button id="refresh-pic">刷新图片</button>
+		
+		<div class="grid-img">
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			<div class="img-item">
+				<img src="./public/img/404.png" alt="图片丢失了">
+			</div>
+			
+		</div>
+		<div class="page-turn">
+			<button id="forward" style="height: inherit;display: flex; align-items: center;"><</button>
+			<span>第<span id="page-num">1</span>页</span>
+			<button id="backward" style="height: inherit;display: flex; align-items: center;">></button>
+		</div>
+		
 		
 	</body>
 </html>
