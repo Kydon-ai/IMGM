@@ -57,6 +57,7 @@ function IPCRegister(win) {
 	ipcMain.handle("openDirectory", async () => {
 		const result = await dialog.showOpenDialog(win, {
 			properties: ["openDirectory", "multiSelections"],
+			// properties: ["openDirectory"],
 		});
 		// sysInfo(result);
 		return result.filePaths;
@@ -142,7 +143,7 @@ function isImageFile(file) {
 		".jpg",
 		".jpeg",
 		".png",
-        ".gif",
+		".gif",
 		/*, ".gif", ".bmp", ".svg" */
 	];
 	const ext = path.extname(file).toLowerCase();

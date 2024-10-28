@@ -9,9 +9,12 @@ contextBridge.exposeInMainWorld("electron", {
 	scanDir: (dirPath) => ipcRenderer.invoke("scanDir", dirPath),
 	checkDir: (firPath) => ipcRenderer.invoke("checkDir", firPath),
 	getData: (key) => ipcRenderer.invoke("getData", key),
-	setData: (key, data) => ipcRenderer.invoke("setData", key, data),
+	setData: (key, data) => {
+		console.log("存入数据", key, data);
+		ipcRenderer.invoke("setData", key, data);
+	},
 	refresh: () => refreshPage(),
-	sendMsg: (msg) => ipcRenderer.send('message',msg),
+	sendMsg: (msg) => ipcRenderer.send("message", msg),
 });
 
 console.log(document.getElementsByTagName("img"));

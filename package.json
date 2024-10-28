@@ -21,7 +21,8 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "bingo": "npx electron-forge import && npm run make"
   },
   "author": "LiuQidong",
   "license": "ISC",

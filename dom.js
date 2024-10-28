@@ -46,6 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 		.addEventListener("click", async function () {
 			// 这里获得一个path
 			let filePath = await window.electron.openDirectory();
+			filePath = filePath[0]; // 支取第一个路径进行缓存
+			// console.log("查看存入路径", filePath);
 			document.getElementById("file-path").innerHTML = filePath;
 			await window.electron.setData("scanPath", filePath);
 		});
@@ -66,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 				// scanImagesInDirectory(path)
 				let imgList = await window.electron.scanDir(filePath);
 				// await window.electron.setData('imgList',imgList);
-				alert("搜索完毕")
+				alert("搜索完毕");
 				// imgList.array.forEach(element => {
 				//     console.log(element);
 				// });
