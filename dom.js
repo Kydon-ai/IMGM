@@ -1,6 +1,11 @@
 // 这个脚本用来添加dom
 document.addEventListener("DOMContentLoaded", async () => {
 	console.log("Script loaded and DOM fully parsed and ready");
+	// console.log("打印方法", window.electron);
+	for (var name in window.electron) {
+		// des += name + ":" + obj[name] + ";";
+		console.log("打印：", name, window.electron[name]);
+	}
 	// 添加复制功能
 	const copyButtons = document.querySelectorAll(".copy-btn");
 	copyButtons.forEach((button) => {
@@ -61,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 				// scanImagesInDirectory(path)
 				let imgList = await window.electron.scanDir(filePath);
 				// await window.electron.setData('imgList',imgList);
-				// alert(imgList)
+				alert("搜索完毕")
 				// imgList.array.forEach(element => {
 				//     console.log(element);
 				// });
@@ -96,10 +101,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	document
 		.getElementById("backward")
 		.addEventListener("click", async function () {
-			let page = await window.eletron.getData("page");
+			let page = await window.electron.getData("page");
 			let MaxPageList = await window.electron.getData("imgList");
-			let MaxPage = c;
-			parseInt(MaxPageList.length / 8) + (MaxPageList.length % 8 ? 1 : 0);
+			let MaxPage =
+				parseInt(MaxPageList.length / 8) + (MaxPageList.length % 8 ? 1 : 0);
 			// console.log("打印数值", MaxPageList);
 			page = Math.min(MaxPage, page + 1);
 
@@ -108,6 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 			console.log("下一页翻页完毕");
 			document.getElementById("page-num").innerHTML = page;
 		});
+	// 函数区
 });
 // 复制到粘贴板
 // async function copyImageToClipboard(imageUrl) {

@@ -27,3 +27,4 @@ npm run make 打包成可发布版本
 https://zhuanlan.zhihu.com/p/37050595?edition=yidianzixun
 2.当前粘贴板API不支持粘贴GIF，如何解决这个问题呢？？？？？
 https://developer.mozilla.org/zh-CN/docs/Web/API/Clipboard/write
+受[https://deepinout.com/html/html-questions/301_html_javascript_copy_element_to_clipboard_with_all_styles.html#google_vignette]的启发，已解决。
