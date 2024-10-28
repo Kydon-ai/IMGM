@@ -1,6 +1,12 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
-// 消息组件
-const { Notification } = require("electron");
+const {
+	app,
+	BrowserWindow,
+	ipcMain,
+	dialog,
+	Notification,
+} = require("electron");
+// // 消息组件
+// const { Notification } = require("electron");
 const storage = require("electron-localstorage");
 
 const path = require("path");
@@ -82,6 +88,13 @@ function IPCRegister(win) {
 	//     console.log('begin refresh');
 	//     refreshPage();
 	// });
+	ipcMain.on("message", (event, msg) => {
+		let notification = new Notification({
+			title: "图片检索工具通知",
+			body: msg,
+		});
+		notification.show();
+	});
 }
 // 递归遍历文件夹的函数
 function traverseDirectory(dirPath, imagesList) {

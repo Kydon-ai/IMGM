@@ -1,5 +1,5 @@
 // 这个脚本用来搭建NodeJS API和electron链接的桥梁
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, Notification } = require("electron");
 // const storage = require("electron-localstorage");
 // 到底是统一再main导入，这里只写ipcRenderer
 // 还是将导入的库都放到这里？？
@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("electron", {
 	getData: (key) => ipcRenderer.invoke("getData", key),
 	setData: (key, data) => ipcRenderer.invoke("setData", key, data),
 	refresh: () => refreshPage(),
+	sendMsg: (msg) => ipcRenderer.send('message',msg),
 });
 
 console.log(document.getElementsByTagName("img"));
