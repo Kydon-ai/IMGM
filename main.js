@@ -8,10 +8,13 @@ const {
 // // 消息组件
 // const { Notification } = require("electron");
 const storage = require("electron-localstorage");
+const Store = require("electron-store");
+const store = new Store();
 
 const path = require("path");
 const fs = require("fs");
 
+// storage.setStoragePath(path.join(__dirname, "test.json"));
 const createWindow = () => {
 	console.log("开始程序");
 	const win = new BrowserWindow({
@@ -26,6 +29,11 @@ const createWindow = () => {
 			// nodeIntegration: true // 这将允许渲染进程直接使用 require 来加载 Node.js 模块
 		},
 	});
+	// localStorage.setItem("666", 100);
+	// console.log("获取内存", localStorage.getItem("666"));
+
+	// store.set("666", 999);
+	// console.log("key:666", store.get("666"));
 
 	win.loadFile("index.html");
 	console.log("打印对象", win.webContents);
@@ -39,14 +47,23 @@ const createWindow = () => {
 
 	sysInfo("process start!!!");
 	// 检查缓存
-	if (!storage.getItem("page")) {
-		storage.setItem("page", 1);
+	// if (!storage.getItem("page")) {
+	// 	storage.setItem("page", 1);
+	// }
+	// if (!storage.getItem("imgList")) {
+	// 	storage.setItem("imgList", []);
+	// }
+	// if (!storage.getItem("scanPath")) {
+	// 	storage.setItem("scanPath", "C:\\Users\\Liu2003\\Pictures");
+	// }
+	if (!store.get("page")) {
+		store.set("page", 1);
 	}
-	if (!storage.getItem("imgList")) {
-		storage.setItem("imgList", []);
+	if (!store.get("imgList")) {
+		store.set("imgList", []);
 	}
-	if (!storage.getItem("scanPath")) {
-		storage.setItem("scanPath", "C:\\Users\\Liu2003\\Pictures");
+	if (!store.get("scanPath")) {
+		store.set("scanPath", "C:\\Users\\Liu2003\\Pictures");
 	}
 	// IPC注册
 	IPCRegister(win);
@@ -66,7 +83,7 @@ function IPCRegister(win) {
 		// console.log("print into path", event, dirPath);
 		console.log("print into path", dirPath);
 		let imgList = scanImagesInDirectory(dirPath);
-		storage.setItem("imgList", imgList);
+		store.set("imgList", imgList);
 		return imgList;
 	});
 	ipcMain.handle("checkDir", (event, dirPath) => {
@@ -77,13 +94,13 @@ function IPCRegister(win) {
 	ipcMain.handle("getData", (event, key) => {
 		// console.log("print get key", event, key);
 		console.log("print get key", key);
-		return storage.getItem(key);
+		return store.get(key);
 	});
 
 	ipcMain.handle("setData", (event, key, data) => {
 		// console.log("print set key and data", event, key, data);
 		console.log("print set key and data", key, data);
-		storage.setItem(key, data);
+		store.set(key, data);
 	});
 	// ipcMain.handle('refresh', () => {
 	//     console.log('begin refresh');
