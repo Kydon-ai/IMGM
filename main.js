@@ -7,7 +7,7 @@ const {
 } = require("electron");
 // // 消息组件
 // const { Notification } = require("electron");
-const storage = require("electron-localstorage");
+// const storage = require("electron-localstorage");
 const Store = require("electron-store");
 const store = new Store();
 
