@@ -203,5 +203,6 @@ function copyImage(imgUrl) {
 	document.body.removeChild(tempImg);
 
 	console.log("图像元素已成功复制");
-	window.electron.sendMsg("图片已复制到粘贴板"); // 不需要返回值，不需要等promise
+	// window.electron.sendMsg("图片已复制到粘贴板"); // 不需要返回值，不需要等promise
+	window.electron.showMessage("success","图片已复制到粘贴板"); // 不需要返回值，不需要等promise
 }

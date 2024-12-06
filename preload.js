@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld("electron", {
 		showMessage('success',"刷新当前浏览")
 	},
 	sendMsg: (msg) => ipcRenderer.send("message", msg),
+	// 单纯进行消息通知
+	showMessage: (type,msg) => {
+		showMessage(type,msg)
+	}
 });
 
 console.log(document.getElementsByTagName("img"));
