@@ -13,8 +13,9 @@ const store = new Store();
 
 const path = require("path");
 const fs = require("fs");
+const os = require('os');
 
-const DEFAULTFILEPATH = ["C:\\Users\\Liu2003\\Pictures"]
+const DEFAULTFILEPATH = [`C:\\Users\\${getCurrentUserInfo().username}\\Pictures`]
 // storage.setStoragePath(path.join(__dirname, "test.json"));
 const createWindow = () => {
 	console.log("开始程序");
@@ -122,6 +123,9 @@ function IPCRegister(win) {
 		// toastr.info(message)
 	});
 
+	ipcMain.handle("getUserInfo", (event) => {
+		return getCurrentUserInfo();
+	});
 	ipcMain.on("message", (event, msg) => {
 		let notification = new Notification({
 			title: "图片检索工具通知",
@@ -189,5 +193,16 @@ function scanImagesInDirectory(dirPath) {
 	traverseDirectory(dirPath, dataList);
 	return dataList;
 }
-app.whenReady().then(createWindow);
+
+function getCurrentUserInfo() {
+	return  os.userInfo();  
+}
+app.whenReady().then(() => {
+
+	// const userInfo = os.userInfo();  // 获取当前用户信息
+	// const username = userInfo.username;  // 提取用户名
+	// console.log(`current userName is: ${username}`);
+	createWindow();
+
+});
 // 只有main.js 可以使用 require 模块 和 Nodejs的API

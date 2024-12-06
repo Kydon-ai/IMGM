@@ -27,6 +27,11 @@ contextBridge.exposeInMainWorld("electron", {
 	// 单纯进行消息通知
 	showMessage: (type,msg) => {
 		showMessage(type,msg)
+	},
+	getUser: () => {
+		var userInfo = ipcRenderer.invoke("getUserInfo");
+		showMessage('success',`当前用户：${userInfo.usernam}`)
+		return userInfo
 	}
 });
 

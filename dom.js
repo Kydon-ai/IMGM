@@ -31,8 +31,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (historyPath) {
 		document.getElementById("file-path").innerHTML = historyPath;
 	} else {
-		document.getElementById("file-path").innerHTML =
-			"C:\\Users\\Liu2003\\Pictures";
+		let userInfo = await window.electron.getUser()
+		document.getElementById("file-path").innerHTML = userInfo.username	
 	}
 
 	console.log("上次的路径：", historyPath);
