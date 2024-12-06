@@ -1,5 +1,11 @@
 // 这个脚本用来搭建NodeJS API和electron链接的桥梁
 const { contextBridge, ipcRenderer, Notification } = require("electron");
+// 这个样式是写在index.html文件当中，和渲染进程绑在一起，所以需要将他放在预加载脚本，
+// 放在main，加载不了样式就会失效
+const { Notyf } = require('notyf')
+// 仓库地址：https://github.com/caroso1222/notyf?tab=readme-ov-file
+// 图标库：https://fonts.google.com/icons
+
 // const storage = require("electron-localstorage");
 // 到底是统一再main导入，这里只写ipcRenderer
 // 还是将导入的库都放到这里？？
@@ -13,12 +19,39 @@ contextBridge.exposeInMainWorld("electron", {
 		console.log("存入数据", key, data);
 		ipcRenderer.invoke("setData", key, data);
 	},
-	refresh: () => refreshPage(),
+	refresh: () => {
+		refreshPage();
+		showMessage('success',"刷新当前浏览")
+	},
 	sendMsg: (msg) => ipcRenderer.send("message", msg),
 });
 
 console.log(document.getElementsByTagName("img"));
 
+// 新的消息组件，系统消息组件是写在main
+function showMessage(type,msg) {
+	notyf = new Notyf({
+		duration: 1500, //显示时长(ms)
+		position: { x: 'center', y: 'top' }, // 参见https://carlosroso.com/notyf/
+		// dismissible: true ,// 显示关闭按钮
+		//  backgroundColor: '#FF5733', // 背景颜色
+		// icon: 'check-circle'
+		ripple: true ,// 启用涟漪
+		// 最后还可以使用 types自定义
+	});
+	if (type === 'success'){
+		notyf.success(msg);
+
+	}else if (type === 'error') {
+		notyf.error(msg);
+
+	}else if(type === 'warn') {
+		notyf.error(msg);
+	} else {
+		notyf.error("未知消息类型！");
+	}
+	notyf = null
+}
 // 读取缓存中
 async function refreshPage() {
 	console.log("刷新加载");

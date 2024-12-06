@@ -14,6 +14,7 @@ const store = new Store();
 const path = require("path");
 const fs = require("fs");
 
+const DEFAULTFILEPATH = ["C:\\Users\\Liu2003\\Pictures"]
 // storage.setStoragePath(path.join(__dirname, "test.json"));
 const createWindow = () => {
 	console.log("开始程序");
@@ -26,6 +27,9 @@ const createWindow = () => {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,
 			enableRemoteModule: false,
+
+			// nodeIntegration: false,  // 禁用 Node.js 集成
+			nodeIntegration: true,  // 不开启沙盒化
 			// nodeIntegration: true // 这将允许渲染进程直接使用 require 来加载 Node.js 模块
 		},
 	});
@@ -54,7 +58,7 @@ const createWindow = () => {
 	// 	storage.setItem("imgList", []);
 	// }
 	// if (!storage.getItem("scanPath")) {
-	// 	storage.setItem("scanPath", "C:\\Users\\Liu2003\\Pictures");
+	// 	storage.setItem("scanPath", DEFAULTFILEPATH);
 	// }
 	if (!store.get("page")) {
 		store.set("page", 1);
@@ -62,8 +66,9 @@ const createWindow = () => {
 	if (!store.get("imgList")) {
 		store.set("imgList", []);
 	}
+	// 上次扫描的文件路径，String
 	if (!store.get("scanPath")) {
-		store.set("scanPath", "C:\\Users\\Liu2003\\Pictures");
+		store.set("scanPath", DEFAULTFILEPATH[0]);
 	}
 	// IPC注册
 	IPCRegister(win);
@@ -77,7 +82,13 @@ function IPCRegister(win) {
 			// properties: ["openDirectory"],
 		});
 		// sysInfo(result);
-		return result.filePaths;
+		if (result.filePaths.length === 0){
+			// console.log('触发默认路径');
+			result.filePaths = DEFAULTFILEPATH
+		} else {
+			console.log('查看路径',result.filePaths);
+		}
+		return result?.filePaths;
 	});
 	ipcMain.handle("scanDir", (event, dirPath) => {
 		// console.log("print into path", event, dirPath);
@@ -106,6 +117,11 @@ function IPCRegister(win) {
 	//     console.log('begin refresh');
 	//     refreshPage();
 	// });
+	ipcMain.handle("showInfo", (event, message) => {
+		console.log('showInfo:',message);
+		// toastr.info(message)
+	});
+
 	ipcMain.on("message", (event, msg) => {
 		let notification = new Notification({
 			title: "图片检索工具通知",

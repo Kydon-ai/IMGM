@@ -14,6 +14,7 @@
 		<title>图片读取工具</title>
 		<!-- <script src="renderer.js"></script> -->
 		<script src="dom.js"></script>
+
 		<style>  
 			.grid-img {  
 				display: grid;  
@@ -53,6 +54,17 @@
 		</style>
 	</head>
 	<body>
+		<!-- 
+		<script src="node_modules/jquery/dist/jquery.min.js"></script>
+		<script src="node_modules/toastr/build/toastr.min.js"></script> 
+		-->
+		<!-- 
+			像CSS，就需要使用link进行引入，不然就会默认被当做js进行识别
+			其他方案就需要WebPack进行配置，link标签引入CSS比较好
+		 -->
+		<!-- <script src="node_modules/notyf/notyf.min.css"></script> -->
+		<link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
+
 		<!-- <script src="./renderer.js"></script> -->
 		<h1 style="text-align: center;">图片检索工具</h1>
 		<p>

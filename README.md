@@ -10,10 +10,11 @@ https://blog.csdn.net/weixin_50216991/article/details/124188494
 https://blog.csdn.net/ZYS10000/article/details/134913618
 
 项目说明：
-index.html 项目入口文件
-main.js 程序代码入口
-preload.js 预加载脚本，写 IPC 的
-dom.js dom 相关操作
+index.html  项目入口文件
+main.js     程序代码入口
+preload.js  预加载脚本，写 IPC 的
+dom.js dom  相关操作
+renderer.js 写着玩玩
 
 项目指令：
 pnpm start 启动项目
@@ -25,6 +26,7 @@ npm run make 打包成可发布版本
 1.当主线程需要消耗 CPU 干密集型任务的时候，会导致程序卡顿，想办法解决？？
 网上的解决方法貌似是，额外开一个线程，让这个线程去干活
 https://zhuanlan.zhihu.com/p/37050595?edition=yidianzixun
+
 2.当前粘贴板API不支持粘贴GIF，如何解决这个问题呢？？？？？
 https://developer.mozilla.org/zh-CN/docs/Web/API/Clipboard/write
 受[https://deepinout.com/html/html-questions/301_html_javascript_copy_element_to_clipboard_with_all_styles.html#google_vignette]的启发，已解决。
