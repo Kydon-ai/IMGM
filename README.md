@@ -3,6 +3,7 @@ https://blog.csdn.net/C_hawthorn/article/details/136072703
 https://blog.csdn.net/qq_38463737/article/details/140277803
 
 参考文章：
+
 https://blog.csdn.net/qq_37779709/article/details/81633502
 入门文章：
 https://blog.csdn.net/weixin_50216991/article/details/124188494
@@ -10,13 +11,16 @@ https://blog.csdn.net/weixin_50216991/article/details/124188494
 https://blog.csdn.net/ZYS10000/article/details/134913618
 
 项目说明：
-index.html  项目入口文件
-main.js     程序代码入口
-preload.js  预加载脚本，写 IPC 的
-dom.js dom  相关操作
+index.html 项目入口文件
+main.js 程序代码入口
+preload.js 预加载脚本，写 IPC 的
+dom.js dom 相关操作
 renderer.js 写着玩玩
 
 项目指令：
+
+npm i 下载依赖 如果安装失败，可以尝试全局安装 cnpm 然后安装
+npm i cnpm -g 全局安装 cnpm
 pnpm start 启动项目
 npx electron-forge import 导入项目到 Forge
 npm run make 打包成可发布版本
@@ -27,6 +31,6 @@ npm run make 打包成可发布版本
 网上的解决方法貌似是，额外开一个线程，让这个线程去干活
 https://zhuanlan.zhihu.com/p/37050595?edition=yidianzixun
 
-2.当前粘贴板API不支持粘贴GIF，如何解决这个问题呢？？？？？
+2.当前粘贴板 API 不支持粘贴 GIF，如何解决这个问题呢？？？？？
 https://developer.mozilla.org/zh-CN/docs/Web/API/Clipboard/write
 受[https://deepinout.com/html/html-questions/301_html_javascript_copy_element_to_clipboard_with_all_styles.html#google_vignette]的启发，已解决。

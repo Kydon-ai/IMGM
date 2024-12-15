@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8" />
-		<!-- 下面这个设置居然会影响grid布局 -->
-		<!-- <meta
+
+<head>
+	<meta charset="UTF-8" />
+	<!-- 下面这个设置居然会影响grid布局 -->
+	<!-- <meta
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'"
 		/>
@@ -11,110 +12,138 @@
 			http-equiv="X-Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'"
 		/> -->
-		<title>图片读取工具</title>
-		<!-- <script src="renderer.js"></script> -->
-		<script src="dom.js"></script>
+	<title>图片读取工具</title>
+	<!-- <script src="renderer.js"></script> -->
+	<script src="dom.js"></script>
 
-		<style>  
-			.grid-img {  
-				display: grid;  
-				grid-template-columns: auto auto auto auto ; /* 使用repeat函数创建4列，每列等宽 */  
-				gap: 10px; /* 设置网格项之间的间距 */  
-				padding: 10px;  
-			}  
-		
-			.img-item {  
-				position: relative;  
-				display: inline-block; /* 或者其他布局方式 */ 
-				border: 1px solid rgba(0, 0, 0, 0.8);  
-				padding: 20px;  
-				width: auto; /* 让div根据内容自动调整宽度，但img会覆盖这个设置 */  
-				height: 180px; /* 同样，让div高度自动，但img的高度会被object-fit控制 */  
-			}  
-		
-			.img-item img {  
-				width: 100%;  
-				height: 100%;  
-				object-fit: cover ; /* 使用cover确保图片覆盖整个容器，同时保持比例 */  
-			}  
-			.page-turn {
-				display: flex;
-				float: right;
-				height: 20px;
-			}
-			
-			
-			.copy-btn {  
-				position: absolute;  
-				top: 1px; /* 根据需要调整 */  
-				right: 1px; /* 根据需要调整 */  
-				padding: 5px 10px;  
-				cursor: pointer;  
-			}
-		</style>
-	</head>
-	<body>
-		<!-- 
+	<style>
+		.grid-img {
+			display: grid;
+			grid-template-columns: auto auto auto auto;
+			/* 使用repeat函数创建4列，每列等宽 */
+			gap: 10px;
+			/* 设置网格项之间的间距 */
+			padding: 10px;
+		}
+
+		.img-item {
+			position: relative;
+			display: inline-block;
+			/* 或者其他布局方式 */
+			border: 1px solid rgba(0, 0, 0, 0.8);
+			padding: 20px;
+			width: auto;
+			/* 让div根据内容自动调整宽度，但img会覆盖这个设置 */
+			height: 180px;
+			/* 同样，让div高度自动，但img的高度会被object-fit控制 */
+		}
+
+		.img-item img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			/* 使用cover确保图片覆盖整个容器，同时保持比例 */
+		}
+
+		.page-turn {
+			display: flex;
+			float: right;
+			height: 20px;
+		}
+
+
+		.copy-btn {
+			position: absolute;
+			top: 1px;
+			/* 根据需要调整 */
+			right: 1px;
+			/* 根据需要调整 */
+			padding: 5px 10px;
+			cursor: pointer;
+		}
+
+		.rename-btn {
+			position: absolute;
+			top: 1px;
+			left: 1px;
+			padding: 5px 10px;
+			cursor: pointer;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- 
 		<script src="node_modules/jquery/dist/jquery.min.js"></script>
 		<script src="node_modules/toastr/build/toastr.min.js"></script> 
 		-->
-		<!-- 
+	<!-- 
 			像CSS，就需要使用link进行引入，不然就会默认被当做js进行识别
 			其他方案就需要WebPack进行配置，link标签引入CSS比较好
 		 -->
-		<!-- <script src="node_modules/notyf/notyf.min.css"></script> -->
-		<link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
+	<!-- <script src="node_modules/notyf/notyf.min.css"></script> -->
+	<link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
 
-		<!-- <script src="./renderer.js"></script> -->
-		<h1 style="text-align: center;">图片检索工具</h1>
-		<p>
-			请选择扫描文件夹路径：<span id="file-path" ></span>
-		</p> 
-		<button id="select-folder">选择文件夹</button>
-		<button id="clear-path">清空路径</button>
-		<button id="start-search">开始搜索</button>
-		<button id="refresh-pic">刷新图片</button>
-		
-		<div class="grid-img">
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
-			<div class="img-item">
-				<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-				<button class="copy-btn">复制</button>  
-			</div>
+	<!-- <script src="./renderer.js"></script> -->
+	<h1 style="text-align: center;">图片检索工具</h1>
+	<p>
+		请选择扫描文件夹路径：<span id="file-path"></span>
+	</p>
+	<button id="select-folder">选择文件夹</button>
+	<button id="clear-path">清空路径</button>
+	<button id="start-search">开始搜索</button>
+	<button id="refresh-pic">刷新图片</button>
+	<button id="check-cache">查看缓存</button>
+	<div class="grid-img">
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
 		</div>
-		<div class="page-turn">
-			<button id="forward" style="height: inherit;display: flex; align-items: center;"><</button>
-			<span>第<span id="page-num">1</span>页</span>
-			<button id="backward" style="height: inherit;display: flex; align-items: center;">></button>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
 		</div>
-		
-		
-	</body>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+		<div class="img-item">
+			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
+			<button class="copy-btn">复制</button>
+			<button class="rename-btn">改标签</button>
+		</div>
+	</div>
+	<div class="page-turn">
+		<button id="forward" style="height: inherit;display: flex; align-items: center;">&lt;</button>
+		<span>第<span id="page-num">1</span>页</span>
+		<button id="backward" style="height: inherit;display: flex; align-items: center;">&gt;</button>
+	</div>
+
+
+</body>
+
 </html>
