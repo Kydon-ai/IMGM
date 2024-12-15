@@ -6,6 +6,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // des += name + ":" + obj[name] + ";";
     console.log("打印：", name, window.electron[name]);
   }
+  // 从preload获取的监听模板
+  window.electron.ipcRenderer.on("modalData", (data) => {
+    console.log("接受数据", data); // 接收数据
+
+    // 调用刷新，取8个图片将图片按照新的url渲染
+    window.electron.refresh();
+  });
   // 添加复制功能
   document.querySelectorAll(".copy-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -22,7 +29,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   });
+  // 改标签功能
+  document.querySelectorAll(".rename-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      console.log("你点击了改标签");
+      const img = button.previousElementSibling.previousElementSibling; // 获取相邻的 img 元素
 
+      if (img && img.tagName === "IMG") {
+        console.log("打印元素", img);
+        try {
+          var msg = await window.electron.openRenameModel({
+            src: img.src,
+          });
+        } catch (err) {
+          console.error("Could not open modal: ", err);
+        }
+      }
+    });
+  });
   // 初始化图片
   await window.electron.refresh();
   // 加载上次的路径

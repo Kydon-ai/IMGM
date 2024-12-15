@@ -2,6 +2,7 @@ const {
   app,
   BrowserWindow,
   ipcMain,
+  ipcRenderer,
   dialog,
   Notification,
 } = require("electron");
@@ -22,11 +23,14 @@ if (platform === "linux") {
 } else {
   DEFAULTFILEPATH.push(`C:\\Users\\${getCurrentUserInfo().username}\\Pictures`);
 }
-
+// 主界面
+let win = null;
+// 修改界面的模态框
+let modalWindow = null;
 // storage.setStoragePath(path.join(__dirname, "test.json"));
 const createWindow = () => {
   console.log("开始程序");
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 710,
     minHeight: 710,
@@ -85,7 +89,7 @@ const createWindow = () => {
 };
 // IPC模块
 function IPCRegister(win) {
-  // 注册IPC
+  // 注册win的IPC
   ipcMain.handle("openDirectory", async () => {
     const result = await dialog.showOpenDialog(win, {
       properties: ["openDirectory", "multiSelections"],
@@ -157,6 +161,73 @@ function IPCRegister(win) {
   ipcMain.handle("getAllStore", (event) => {
     return store.store;
   });
+  ipcMain.handle("openRenameModel", (event, props) => {
+    var msg = createModalWindow(props);
+    // console.log("openRenameModelopenRenameModel:", msg);
+    return msg;
+  });
+  ipcMain.on("modalToOther", (event, FILE) => {
+    // 更新缓存中的数据，原地更新
+    let imgList = store.get("imgList");
+    FILE.originPath = convertFileUrlToPath(FILE.originPath);
+    console.log(
+      "打印imgList",
+      FILE
+      // imageList
+    );
+    // for (let i = 0; i < imageList.length; i++) {
+    //   console.log("图片:", imageList[i]);
+    // }
+    for (let i = 0; i < imgList.length; i++) {
+      if (imgList[i] == FILE.originPath) {
+        console.log("查找到图片", i, imgList[i]);
+        var targetList = imgList[i].split("/");
+        // console.log("修改后图片", i, targetList);
+        targetList[targetList.length - 1] = FILE.changeName;
+        imgList[i] = targetList.join("/");
+        console.log("修改后图片", i, imgList[i]);
+        // console.log("修改后图片", i, targetList.join("/"));
+        break;
+      }
+    }
+    store.set("imgList", imgList);
+    // 将实际文件改名
+    rename(FILE.originPath, FILE.changeName);
+    // 调用刷新，取8个图片将图片按照新的url渲染
+
+    // 先不更改，通知win
+    win.webContents.send("modalData", FILE);
+  });
+}
+function createModalWindow(props) {
+  if (modalWindow) {
+    return "新建失败，模态框已存在";
+  }
+
+  modalWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    parent: win, // 设置父窗口
+    modal: true, // 设置为模态窗口
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  modalWindow.loadFile("modal.html");
+  // 发送数据到模态窗口
+  modalWindow.webContents.on("did-finish-load", () => {
+    modalWindow.webContents.openDevTools();
+    console.log("发送数据");
+    modalWindow.webContents.send("data-from-main", props);
+  });
+  modalWindow.on("closed", () => {
+    console.log("modalWindow销毁");
+    modalWindow = null;
+  });
+
+  return "新建成功";
 }
 // 递归遍历文件夹的函数
 function traverseDirectory(dirPath, imagesList) {
@@ -175,28 +246,6 @@ function traverseDirectory(dirPath, imagesList) {
     }
   });
 }
-// 异步遍历文件夹的函数
-// async function traverseDirectory(dirPath, imagesList = []) {
-//     try {
-//         const files = await fs.readdir(dirPath, { withFileTypes: true });
-
-//         for (const file of files) {
-//             const fullPath = path.join(dirPath, file.name);
-
-//             if (file.isDirectory()) {
-//                 // 如果是文件夹，则递归遍历
-//                 await traverseDirectory(fullPath, imagesList);
-//             } else if (file.isFile() && isImageFile(file.name)) {
-//                 // 如果是文件且是图片文件，则添加到列表中
-//                 imagesList.push(fullPath);
-//             }
-//         }
-//     } catch (error) {
-//         console.error(`Error reading directory ${dirPath}:`, error);
-//     }
-
-//     return imagesList;
-// }
 // 检查文件是否为图片文件的函数
 function isImageFile(file) {
   // 图片文件的扩展名
@@ -235,3 +284,23 @@ app.whenReady().then(() => {
   createWindow();
 });
 // 只有main.js 可以使用 require 模块 和 Nodejs的API
+
+// 获取纯净的本地路径
+function convertFileUrlToPath(fileUrl) {
+  // 移除file:///协议头，并将其他部分进行解码
+  const path = decodeURIComponent(fileUrl.replace("file://", ""));
+  // 根据操作系统不同，可能需要处理路径分隔符
+  return path;
+}
+
+function rename(oldPath, fileName) {
+  const newPath = path.join(path.dirname(oldPath), fileName);
+  fs.rename(oldPath, newPath, (err) => {
+    if (err) {
+      console.error("重命名失败:", err);
+      return;
+    }
+    console.log(`文件重命名为: ${fileName},路径在${newPath}`);
+    // 这里可以添加逻辑来更新 imgList
+  });
+}

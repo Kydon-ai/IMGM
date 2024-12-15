@@ -1,5 +1,6 @@
 // 这个脚本用来搭建NodeJS API和electron链接的桥梁
 const { contextBridge, ipcRenderer, Notification } = require("electron");
+
 // 这个样式是写在index.html文件当中，和渲染进程绑在一起，所以需要将他放在预加载脚本，
 // 放在main，加载不了样式就会失效
 const { Notyf } = require("notyf");
@@ -11,6 +12,11 @@ const { Notyf } = require("notyf");
 // 还是将导入的库都放到这里？？
 // 我倾向于后者，在main里面使用document会出问题
 contextBridge.exposeInMainWorld("electron", {
+  ipcRenderer: {
+    send: (channel, data) => ipcRenderer.send(channel, data),
+    on: (channel, func) =>
+      ipcRenderer.on(channel, (event, ...args) => func(...args)),
+  },
   openDirectory: () => ipcRenderer.invoke("openDirectory"),
   scanDir: (dirPath) => ipcRenderer.invoke("scanDir", dirPath),
   checkDir: (firPath) => ipcRenderer.invoke("checkDir", firPath),
@@ -33,10 +39,16 @@ contextBridge.exposeInMainWorld("electron", {
     showMessage("success", `当前用户：${userInfo.usernam}`);
     return userInfo;
   },
-  getCache: () => {
-    var store = ipcRenderer.invoke("getAllStore");
+  getCache: async () => {
+    var store = await ipcRenderer.invoke("getAllStore");
     console.log("getCache:", store);
     return store;
+  },
+  //  传入数据字典  传回字符串反馈
+  openRenameModel: async (datas) => {
+    var msg = await ipcRenderer.invoke("openRenameModel", datas);
+    console.log("新建改标签窗口情况：", msg);
+    return msg;
   },
 });
 
@@ -67,20 +79,33 @@ function showMessage(type, msg) {
 // 读取缓存中
 async function refreshPage() {
   console.log("刷新加载");
-  // var imgList = []
   // 获取当前页的图片链接
   let imgList = await ipcRenderer.invoke("getData", "imgList");
   let currentPage = await ipcRenderer.invoke("getData", "page");
 
   const PAGESIZE = 8;
+  pageOfImages = getImageList(imgList, currentPage, PAGESIZE);
+  if (pageOfImages === null) return;
+  console.log("print pageOfImages", pageOfImages);
+
+  setImgUrl(pageOfImages);
+}
+
+// 根据缓存的全部imgList 和 当前页 和 页大小
+// 返回一个当前业的图片数组
+function getImageList(imgList, currentPage, PAGESIZE) {
   let left = PAGESIZE * (currentPage - 1);
   let right = Math.min(left + PAGESIZE, imgList.length);
   let pageOfImages = imgList.slice(left, right);
   if (!pageOfImages || pageOfImages.length === 0) {
     console.log("截取后的pageOfImages为空", pageOfImages);
-    return;
+    return null;
   }
-  console.log("print pageOfImages", pageOfImages);
+  return pageOfImages;
+}
+// 给8张图片赋url
+function setImgUrl(pageOfImages) {
+  console.log("更新时的数组", pageOfImages);
   // 获取8个dom，将他们的src改变
   let imgElements = document.getElementsByTagName("img");
   // 遍历img标签
