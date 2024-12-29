@@ -89,11 +89,20 @@
 	<p>
 		请选择扫描文件夹路径：<span id="file-path"></span>
 	</p>
-	<button id="select-folder">选择文件夹</button>
-	<button id="clear-path">清空路径</button>
-	<button id="start-search">开始搜索</button>
-	<button id="refresh-pic">刷新图片</button>
-	<button id="check-cache">查看缓存</button>
+	<div style="display: flex;justify-content: space-between;">
+		<div>
+			<button id="select-folder">选择文件夹</button>
+			<button id="clear-path">清空路径</button>
+			<button id="start-search">开始搜索</button>
+			<button id="refresh-pic">刷新图片</button>
+			<button id="check-cache">查看缓存</button>
+		</div>
+		<div style="display: flex;">
+			<input type="text" id="search-input">
+			<button id="search-button">搜索图片</button>
+		</div>
+	</div>
+
 	<div class="grid-img">
 		<div class="img-item">
 			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">

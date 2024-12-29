@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("clear-path").addEventListener("click", function () {
     document.getElementById("file-path").innerHTML = "";
   });
-  // 扫描对应文件夹
+  // 扫描对应文件夹,进行模糊搜索
   document
     .getElementById("start-search")
     .addEventListener("click", async function () {
@@ -98,9 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         // imgList.array.forEach(element => {
         //     console.log(element);
         // });
-        for (let i = 0; i < imgList?.length ?? 0; i++) {
-          console.log(imgList[i]);
-        }
+        // for (let i = 0; i < imgList?.length ?? 0; i++) {
+        //   console.log(imgList[i]);
+        // }
         // console.log(imgList);
       } else {
         alert("文件路径为空或者无效");
@@ -146,6 +146,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     .addEventListener("click", async function () {
       let store = await window.electron.getCache();
       console.log("打印当前缓存", store);
+    });
+  document
+    .getElementById("search-button")
+    .addEventListener("click", async function () {
+      // 获取搜索框的内容
+      searchText = document.getElementById("search-input").value;
+      console.log("模糊搜索框的内容", searchText);
+      // 拿targetList进行模糊搜索,获得的列表写入imgList
+      targetList = await window.electron.getData("targetList");
+      console.log("查看传入参数", targetList, searchText);
+      imgList = filterPictures(targetList, searchText);
+      await window.electron.setData("imgList", imgList);
+      await window.electron.refresh();
     });
   // 函数区
 });
@@ -237,4 +250,27 @@ function copyImage(imgUrl) {
   console.log("图像元素已成功复制");
   // window.electron.sendMsg("图片已复制到粘贴板"); // 不需要返回值，不需要等promise
   window.electron.showMessage("success", "图片已复制到粘贴板"); // 不需要返回值，不需要等promise
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // 转义正则表达式中的特殊字符
+}
+
+function filterPictures(picList, userInput) {
+  // 将 userInput 分割为字符，并对每个字符进行转义
+  const escapedInput = userInput.split("").map(escapeRegExp).join("(.*?)");
+  const regexPattern = "(.*?)" + escapedInput + "(.*?)"; // 使用 .*? 作为通配符
+  //   console.log("regexPattern:", regexPattern);
+  const regex = new RegExp(regexPattern, "i"); // 'i' 表示不区分大小写
+
+  return picList.filter((pic) => {
+    // 提取文件名（不带后缀）
+    const fileName = pic.split("/").pop();
+    const lastDotIndex = fileName.lastIndexOf(".");
+    const nameWithoutExtension =
+      lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
+    // console.log("fileName:", nameWithoutExtension);
+    // 测试文件名是否匹配正则
+    return regex.test(nameWithoutExtension);
+  });
 }

@@ -75,7 +75,11 @@ const createWindow = () => {
   if (!store.get("page")) {
     store.set("page", 1);
   }
-  if (!store.get("imgList")) {
+  // if (!store.get("imgList")) {
+  //   store.set("imgList", []);
+  // }
+  if (!store.get("targetList")) {
+    store.set("targetList", []); // 上次扫描的路径的完整图片列表
     store.set("imgList", []);
   }
   // 上次扫描的文件路径，String
@@ -104,10 +108,13 @@ function IPCRegister(win) {
     }
     return result?.filePaths;
   });
+  // imgList 是视图显示的所有图片列表,一开始和targetList保持一致,会根据对targetList进行模糊搜索得到
+  // targetList 是每次扫描之后的图片列表,不会被模糊搜索改变
   ipcMain.handle("scanDir", (event, dirPath) => {
     // console.log("print into path", event, dirPath);
     console.log("print into path", dirPath);
     let imgList = scanImagesInDirectory(dirPath);
+    store.set("targetList", imgList);
     store.set("imgList", imgList);
     return imgList;
   });
