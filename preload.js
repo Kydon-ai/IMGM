@@ -108,15 +108,18 @@ function setImgUrl(pageOfImages) {
   console.log("更新时的数组", pageOfImages);
   // 获取8个dom，将他们的src改变
   let imgElements = document.getElementsByTagName("img");
+  let renameElements = document.getElementsByClassName("rename-btn");
   // 遍历img标签
   for (let i = 0; i < imgElements.length; i++) {
     // 检查pageOfImages数组中是否有对应的图片
     if (i < pageOfImages?.length ?? 0) {
       // 如果有，则使用pageOfImages中的图片
       imgElements[i].src = pageOfImages[i];
+      renameElements[i].disabled = false;
     } else {
       // 如果没有，则使用默认图片
       imgElements[i].src = "./public/img/404.png";
+      renameElements[i].disabled = true;
     }
   }
 }
