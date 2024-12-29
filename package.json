@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "debug": "^4.4.0",
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^8.1.0",
     "notyf": "^3.10.0",
@@ -26,6 +27,36 @@
     "bingo": "npx electron-forge import && npm run make"
   },
   "author": "LiuQidong",
-  "license": "ISC",
-  "description": "图片读取工具"
+  "license": "CC BY-NC-SA 4.0",
+  "description": "图片读取工具",
+  "config": {
+    "forge": {
+      "makers": [
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {
+            "name": "IMGM",
+            "setupIcon": "./public/img/IMGM.ico",
+            "options": {
+              "maintainer": "Your Name <you@example.com>",
+              "homepage": "https://yourhomepage.com",
+              "description": "Your app description"
+            }
+          }
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {
+            "name": "IMGM",
+            "setupIcon": "./public/img/IMGM.ico",
+            "options": {
+              "maintainer": "Your Name <you@example.com>",
+              "homepage": "https://yourhomepage.com",
+              "description": "Your app description"
+            }
+          }
+        }
+      ]
+    }
+  }
 }
