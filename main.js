@@ -225,7 +225,7 @@ function createModalWindow(props) {
   modalWindow.loadFile("modal.html");
   // 发送数据到模态窗口
   modalWindow.webContents.on("did-finish-load", () => {
-    modalWindow.webContents.openDevTools();
+    // modalWindow.webContents.openDevTools();
     console.log("发送数据");
     modalWindow.webContents.send("data-from-main", props);
   });
