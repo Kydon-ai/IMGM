@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       await window.electron.setData("page", page);
       await window.electron.refresh();
-      console.log("下一页翻页完毕");
+      console.log("next pageing... ");
       document.getElementById("page-num").innerHTML = page;
     });
   document
@@ -152,10 +152,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     .addEventListener("click", async function () {
       // 获取搜索框的内容
       searchText = document.getElementById("search-input").value;
-      console.log("模糊搜索框的内容", searchText);
+      console.log("Blur the content of the search box：", searchText);
       // 拿targetList进行模糊搜索,获得的列表写入imgList
       targetList = await window.electron.getData("targetList");
-      console.log("查看传入参数", targetList, searchText);
+      console.log("View incoming parameters：", targetList, searchText);
       imgList = filterPictures(targetList, searchText);
       await window.electron.setData("imgList", imgList);
       await window.electron.refresh();
@@ -265,11 +265,13 @@ function filterPictures(picList, userInput) {
 
   return picList.filter((pic) => {
     // 提取文件名（不带后缀）
-    const fileName = pic.split("/").pop();
+    // const fileName = pic.split("/").pop();
+    const fileName = pic.split("\\").pop();
+    
     const lastDotIndex = fileName.lastIndexOf(".");
     const nameWithoutExtension =
       lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
-    // console.log("fileName:", nameWithoutExtension);
+    console.log("filterPictures loop:", fileName,lastDotIndex, nameWithoutExtension);
     // 测试文件名是否匹配正则
     return regex.test(nameWithoutExtension);
   });

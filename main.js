@@ -80,7 +80,7 @@ const createWindow = () => {
   // }
   if (!store.get("targetList")) {
     store.set("targetList", []); // 上次扫描的路径的完整图片列表
-    store.set("imgList", []);
+    store.set("imgList", []);  // 用于操作的图片列表，每次使用targetList作为基准处理后得到
   }
   // 上次扫描的文件路径，String
   if (!store.get("scanPath")) {

@@ -32,10 +32,9 @@
                 console.log('modal 关闭')
                 const filePath  = document.getElementById('dataChange').value 
                 FILE.changeName = getFilePrefix(FILE.originPath) + filePath + getFileSuffix(FILE.originPath)
-                FILE.changeFileName = filePath+ getFileSuffix(FILE.originPath)
+                FILE.changeFileName = filePath + getFileSuffix(FILE.originPath)
                 ipcRenderer.send('modalToOther', FILE)
                 console.log('modal发送数据', FILE, "并清空");
-                
                 window.close();
                 FILE = {
                     originPath: '',

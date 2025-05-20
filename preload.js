@@ -85,7 +85,8 @@ async function refreshPage() {
 
   const PAGESIZE = 8;
   pageOfImages = getImageList(imgList, currentPage, PAGESIZE);
-  if (pageOfImages === null) return;
+  console.log('see refresh list', pageOfImages);
+  // if (pageOfImages === null) return;
   console.log("print pageOfImages", pageOfImages);
 
   setImgUrl(pageOfImages);
@@ -99,7 +100,7 @@ function getImageList(imgList, currentPage, PAGESIZE) {
   let pageOfImages = imgList.slice(left, right);
   if (!pageOfImages || pageOfImages.length === 0) {
     console.log("截取后的pageOfImages为空", pageOfImages);
-    return null;
+    return [];
   }
   return pageOfImages;
 }
