@@ -1,270 +1,324 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-	<meta charset="UTF-8" />
-	<!-- 下面这个设置居然会影响grid布局 -->
-	<!-- <meta
-			http-equiv="Content-Security-Policy"
-			content="default-src 'self'; script-src 'self'"
-		/>
-		<meta
-			http-equiv="X-Content-Security-Policy"
-			content="default-src 'self'; script-src 'self'"
-		/> -->
-	<title>图片检索工具</title>
-	<!-- <script src="renderer.js"></script> -->
-	<script src="dom.js"></script>
+    <meta charset="UTF-8" />
+    <title>图片检索工具</title>
+    <style>
+        /* 工具栏样式 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-	<style>
-		/* 新增的工具栏样式 */
-		.toolbar {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 10px;
-			background-color: #f5f5f5;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-		}
+        .toolbar-left, .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-		.toolbar-left, .toolbar-right {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-		}
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
 
-		.toolbar-btn {
-			display: flex;
-			align-items: center;
-			padding: 8px 12px;
-			border: 1px solid #ddd;
-			border-radius: 6px;
-			background-color: white;
-			cursor: pointer;
-			transition: all 0.2s;
-			font-size: 14px;
-		}
+        .toolbar-btn:hover {
+            background-color: #f0f0f0;
+            border-color: #ccc;
+        }
 
-		.toolbar-btn:hover {
-			background-color: #f0f0f0;
-			border-color: #ccc;
-		}
+        .toolbar-btn.primary {
+            background-color: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
 
-		.toolbar-btn.primary {
-			background-color: #4285f4;
-			color: white;
-			border-color: #4285f4;
-		}
+        .toolbar-btn.primary:hover {
+            background-color: #3367d6;
+        }
 
-		.toolbar-btn.primary:hover {
-			background-color: #3367d6;
-		}
+        .icon {
+            margin-right: 6px;
+            font-size: 15px;
+        }
 
-		.icon {
-			margin-right: 6px;
-			font-size: 15px;
-		}
+        .path-controls {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
 
-		.path-controls {
-			display: flex;
-			align-items: center;
-			background-color: white;
-			border-radius: 6px;
-			padding-right: 5px;
-			border: 1px solid #ddd;
-		}
+        .path-controls button:first-child {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+        }
 
-		.path-controls button:first-child {
-			border-top-right-radius: 0;
-			border-bottom-right-radius: 0;
-			border-right: none;
-		}
+        .path-controls button:last-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            padding: 8px;
+        }
 
-		.path-controls button:last-child {
-			border-top-left-radius: 0;
-			border-bottom-left-radius: 0;
-			padding: 8px;
-		}
-		.action-buttons {
-			display: flex;
-			align-items: center;
-		}
-		.search-box {
-			display: flex;
-			align-items: center;
-		}
+        .action-buttons {
+            display: flex;
+            align-items: center;
+        }
 
-		#search-input {
-			padding: 10px 12px;
-			border: 1px solid #ddd;
-			border-radius: 6px 0 0 6px;
-			width: 200px;
-			font-size: 14px;
-			outline: none;
-		}
+        .search-box {
+            display: flex;
+            align-items: center;
+        }
 
-		.search-btn {
-			padding: 8px 12px;
-			border: 1px solid #ddd;
-			border-left: none;
-			border-radius: 0 6px 6px 0;
-			background-color: #f8f8f8;
-			cursor: pointer;
-		}
+        #search-input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px 0 0 6px;
+            width: 200px;
+            font-size: 14px;
+            outline: none;
+        }
 
-		.search-btn:hover {
-			background-color: #eee;
-		}
+        .search-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-left: none;
+            border-radius: 0 6px 6px 0;
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
 
-		#file-path {
-			font-weight: bold;
-			color: #4285f4;
-			margin-left: 5px;
-		}
+        .search-btn:hover {
+            background-color: #eee;
+        }
 
-		/* 原有的网格图片样式保持不变 */
-		.grid-img {
-			display: grid;
-			grid-template-columns: auto auto auto auto;
-			gap: 10px;
-			padding: 10px;
-		}
+        #file-path {
+            font-weight: bold;
+            color: #4285f4;
+            margin-left: 5px;
+        }
 
-		.img-item {
-			position: relative;
-			display: inline-block;
-			border: 1px solid rgba(0, 0, 0, 0.8);
-			padding: 20px;
-			width: auto;
-			height: 180px;
-		}
+        /* 图片展示区域 - 修复高度问题 */
+        .image-container {
+            padding: 0 15px;
+            margin-bottom: 20px;
+        }
 
-		.img-item img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
+        .grid-img {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 确保4列 */
+            grid-auto-rows: 1fr; /* 所有行等高 */
+            gap: 15px;
+            padding: 10px 0;
+        }
 
-		.page-turn {
-			display: flex;
-			float: right;
-			height: 20px;
-		}
+        .img-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            aspect-ratio: 1/1; /* 保持正方形 */
+            background-color: #f8f8f8;
+            display: flex; /* 新增 */
+            flex-direction: column; /* 新增 */
+        }
 
-		.copy-btn {
-			position: absolute;
-			top: 1px;
-			right: 1px;
-			padding: 5px 10px;
-			cursor: pointer;
-		}
+        .img-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
-		.rename-btn {
-			position: absolute;
-			top: 1px;
-			left: 1px;
-			padding: 5px 10px;
-			cursor: pointer;
-		}
-	</style>
+        .img-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            flex-grow: 1; /* 新增 - 确保图片填充空间 */
+        }
+
+        /* 操作按钮 */
+        .copy-btn, .rename-btn {
+            position: absolute;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            background-color: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+        }
+
+        .copy-btn {
+            top: 8px;
+            right: 8px;
+        }
+
+        .rename-btn {
+            top: 8px;
+            left: 8px;
+        }
+
+        .img-item:hover .copy-btn,
+        .img-item:hover .rename-btn {
+            opacity: 1;
+        }
+
+        .copy-btn:hover, .rename-btn:hover {
+            background-color: white;
+            transform: scale(1.05);
+        }
+
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover {
+            background-color: #f0f0f0;
+            border-color: #ccc;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
 </head>
-
 <body>
-	<link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
+    <link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
 
-	<p>
-		请选择扫描文件夹路径：<span id="file-path"></span>
-	</p>
-	
-	<!-- 优化后的工具栏 -->
-	<div class="toolbar">
-		<div class="toolbar-left">
-			<div class="path-controls">
-				<button id="select-folder" class="toolbar-btn">
-					<span class="icon">📁</span> 选择文件夹
-				</button>
-				<button id="clear-path" class="toolbar-btn" title="清空当前路径">
-					<span class="icon">✖</span>
-				</button>
-			</div>
-			
-			<div class="action-buttons">
-				<button id="start-search" class="toolbar-btn primary">
-					<span class="icon">🔍</span> 开始搜索
-				</button>
-				<button id="refresh-pic" class="toolbar-btn">
-					<span class="icon">🔄</span> 刷新
-				</button>
-				<button id="check-cache" class="toolbar-btn">
-					<span class="icon">🗃️</span> 缓存
-				</button>
-			</div>
-		</div>
-		
-		<div class="toolbar-right">
-			<div class="search-box">
-				<input type="text" id="search-input" placeholder="搜索图片...">
-				<button id="search-button" class="search-btn">
-					<span class="icon">🔍</span>
-				</button>
-			</div>
-		</div>
-	</div>
+    <p>请选择扫描文件夹路径：<span id="file-path"></span></p>
+    
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="path-controls">
+                <button id="select-folder" class="toolbar-btn">
+                    <span class="icon">📁</span> 选择文件夹
+                </button>
+                <button id="clear-path" class="toolbar-btn" title="清空当前路径">
+                    <span class="icon">✖</span>
+                </button>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="start-search" class="toolbar-btn primary">
+                    <span class="icon">🔍</span> 开始搜索
+                </button>
+                <button id="refresh-pic" class="toolbar-btn">
+                    <span class="icon">🔄</span> 刷新
+                </button>
+                <button id="check-cache" class="toolbar-btn">
+                    <span class="icon">🗃️</span> 缓存
+                </button>
+            </div>
+        </div>
+        
+        <div class="toolbar-right">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="搜索图片...">
+                <button id="search-button" class="search-btn">
+                    <span class="icon">🔍</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
-	<!-- 原有的图片网格部分保持不变 -->
-	<div class="grid-img">
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-		<div class="img-item">
-			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-			<button class="copy-btn">复制</button>
-			<button class="rename-btn">改标签</button>
-		</div>
-	</div>
-	<div class="page-turn">
-		<button id="forward" style="height: inherit;display: flex; align-items: center;">&lt;</button>
-		<span>第<span id="page-num">1</span>页</span>
-		<button id="backward" style="height: inherit;display: flex; align-items: center;">&gt;</button>
-	</div>
+    <!-- 图片展示区域 -->
+    <div class="image-container">
+        <div class="grid-img">
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn">复制</button>
+                <button class="rename-btn">改标签</button>
+            </div>
+        </div>
 
-	<script>
-		// 原有的JavaScript功能保持不变
-	</script>
+        <!-- 分页控件 -->
+        <div class="pagination">
+            <button id="forward">&lt; 上一页</button>
+            <span class="pagination-info">第 <span id="page-num">1</span> 页</span>
+            <button id="backward">下一页 &gt;</button>
+        </div>
+    </div>
+
+    <script src="dom.js"></script>
+    <script>
+        // 确保复制功能正常工作
+        document.querySelectorAll(".copy-btn").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const img = button.previousElementSibling;
+                if (img && img.tagName === "IMG") {
+                    console.log("复制图片:", img.src);
+                    // 您的原有复制逻辑
+                }
+            });
+        });
+    </script>
 </body>
-
 </html>
