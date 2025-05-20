@@ -112,6 +112,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     .addEventListener("click", async function () {
       await window.electron.setData("page", 1);
       document.getElementById("page-num").innerHTML = 1;
+      
+      let MaxPageList = await window.electron.getData("imgList");
+      let MaxPage = parseInt(MaxPageList.length / 8) + (MaxPageList.length % 8 ? 1 : 0);
+      document.getElementById("all-page-num").innerHTML = MaxPage;
+
       await window.electron.refresh();
     });
   // 翻页
@@ -158,6 +163,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("View incoming parameters：", targetList, searchText);
       imgList = filterPictures(targetList, searchText);
       await window.electron.setData("imgList", imgList);
+
+      let MaxPage = parseInt(imgList.length / 8) + (imgList.length % 8 ? 1 : 0);
+      document.getElementById("all-page-num").innerHTML = MaxPage;
       await window.electron.refresh();
     });
   // 函数区

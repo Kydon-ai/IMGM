@@ -88,7 +88,7 @@ async function refreshPage() {
   console.log('see refresh list', pageOfImages);
   // if (pageOfImages === null) return;
   console.log("print pageOfImages", pageOfImages);
-
+  
   setImgUrl(pageOfImages);
 }
 
@@ -123,4 +123,5 @@ function setImgUrl(pageOfImages) {
       renameElements[i].disabled = true;
     }
   }
+  
 }
