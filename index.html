@@ -12,37 +12,139 @@
 			http-equiv="X-Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'"
 		/> -->
-	<title>图片读取工具</title>
+	<title>图片检索工具</title>
 	<!-- <script src="renderer.js"></script> -->
 	<script src="dom.js"></script>
 
 	<style>
+		/* 新增的工具栏样式 */
+		.toolbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 10px;
+			background-color: #f5f5f5;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+		}
+
+		.toolbar-left, .toolbar-right {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.toolbar-btn {
+			display: flex;
+			align-items: center;
+			padding: 8px 12px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			background-color: white;
+			cursor: pointer;
+			transition: all 0.2s;
+			font-size: 14px;
+		}
+
+		.toolbar-btn:hover {
+			background-color: #f0f0f0;
+			border-color: #ccc;
+		}
+
+		.toolbar-btn.primary {
+			background-color: #4285f4;
+			color: white;
+			border-color: #4285f4;
+		}
+
+		.toolbar-btn.primary:hover {
+			background-color: #3367d6;
+		}
+
+		.icon {
+			margin-right: 6px;
+			font-size: 15px;
+		}
+
+		.path-controls {
+			display: flex;
+			align-items: center;
+			background-color: white;
+			border-radius: 6px;
+			padding-right: 5px;
+			border: 1px solid #ddd;
+		}
+
+		.path-controls button:first-child {
+			border-top-right-radius: 0;
+			border-bottom-right-radius: 0;
+			border-right: none;
+		}
+
+		.path-controls button:last-child {
+			border-top-left-radius: 0;
+			border-bottom-left-radius: 0;
+			padding: 8px;
+		}
+		.action-buttons {
+			display: flex;
+			align-items: center;
+		}
+		.search-box {
+			display: flex;
+			align-items: center;
+		}
+
+		#search-input {
+			padding: 10px 12px;
+			border: 1px solid #ddd;
+			border-radius: 6px 0 0 6px;
+			width: 200px;
+			font-size: 14px;
+			outline: none;
+		}
+
+		.search-btn {
+			padding: 8px 12px;
+			border: 1px solid #ddd;
+			border-left: none;
+			border-radius: 0 6px 6px 0;
+			background-color: #f8f8f8;
+			cursor: pointer;
+		}
+
+		.search-btn:hover {
+			background-color: #eee;
+		}
+
+		#file-path {
+			font-weight: bold;
+			color: #4285f4;
+			margin-left: 5px;
+		}
+
+		/* 原有的网格图片样式保持不变 */
 		.grid-img {
 			display: grid;
 			grid-template-columns: auto auto auto auto;
-			/* 使用repeat函数创建4列，每列等宽 */
 			gap: 10px;
-			/* 设置网格项之间的间距 */
 			padding: 10px;
 		}
 
 		.img-item {
 			position: relative;
 			display: inline-block;
-			/* 或者其他布局方式 */
 			border: 1px solid rgba(0, 0, 0, 0.8);
 			padding: 20px;
 			width: auto;
-			/* 让div根据内容自动调整宽度，但img会覆盖这个设置 */
 			height: 180px;
-			/* 同样，让div高度自动，但img的高度会被object-fit控制 */
 		}
 
 		.img-item img {
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
-			/* 使用cover确保图片覆盖整个容器，同时保持比例 */
 		}
 
 		.page-turn {
@@ -51,13 +153,10 @@
 			height: 20px;
 		}
 
-
 		.copy-btn {
 			position: absolute;
 			top: 1px;
-			/* 根据需要调整 */
 			right: 1px;
-			/* 根据需要调整 */
 			padding: 5px 10px;
 			cursor: pointer;
 		}
@@ -73,36 +172,48 @@
 </head>
 
 <body>
-	<!-- 
-		<script src="node_modules/jquery/dist/jquery.min.js"></script>
-		<script src="node_modules/toastr/build/toastr.min.js"></script> 
-		-->
-	<!-- 
-			像CSS，就需要使用link进行引入，不然就会默认被当做js进行识别
-			其他方案就需要WebPack进行配置，link标签引入CSS比较好
-		 -->
-	<!-- <script src="node_modules/notyf/notyf.min.css"></script> -->
 	<link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
 
-	<!-- <script src="./renderer.js"></script> -->
-	<h1 style="text-align: center;">图片检索工具</h1>
 	<p>
 		请选择扫描文件夹路径：<span id="file-path"></span>
 	</p>
-	<div style="display: flex;justify-content: space-between;">
-		<div>
-			<button id="select-folder">选择文件夹</button>
-			<button id="clear-path">清空路径</button>
-			<button id="start-search">开始搜索</button>
-			<button id="refresh-pic">刷新图片</button>
-			<button id="check-cache">查看缓存</button>
+	
+	<!-- 优化后的工具栏 -->
+	<div class="toolbar">
+		<div class="toolbar-left">
+			<div class="path-controls">
+				<button id="select-folder" class="toolbar-btn">
+					<span class="icon">📁</span> 选择文件夹
+				</button>
+				<button id="clear-path" class="toolbar-btn" title="清空当前路径">
+					<span class="icon">✖</span>
+				</button>
+			</div>
+			
+			<div class="action-buttons">
+				<button id="start-search" class="toolbar-btn primary">
+					<span class="icon">🔍</span> 开始搜索
+				</button>
+				<button id="refresh-pic" class="toolbar-btn">
+					<span class="icon">🔄</span> 刷新
+				</button>
+				<button id="check-cache" class="toolbar-btn">
+					<span class="icon">🗃️</span> 缓存
+				</button>
+			</div>
 		</div>
-		<div style="display: flex;">
-			<input type="text" id="search-input">
-			<button id="search-button">搜索图片</button>
+		
+		<div class="toolbar-right">
+			<div class="search-box">
+				<input type="text" id="search-input" placeholder="搜索图片...">
+				<button id="search-button" class="search-btn">
+					<span class="icon">🔍</span>
+				</button>
+			</div>
 		</div>
 	</div>
 
+	<!-- 原有的图片网格部分保持不变 -->
 	<div class="grid-img">
 		<div class="img-item">
 			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
@@ -131,7 +242,6 @@
 		</div>
 		<div class="img-item">
 			<img src="./public/img/404.png" alt="图片丢失了" class="copyable-img">
-
 			<button class="copy-btn">复制</button>
 			<button class="rename-btn">改标签</button>
 		</div>
@@ -153,7 +263,7 @@
 	</div>
 
 	<script>
-
+		// 原有的JavaScript功能保持不变
 	</script>
 </body>
 
