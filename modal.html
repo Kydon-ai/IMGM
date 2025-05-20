@@ -6,7 +6,7 @@
 </head>
 
 <body>
-    <h1>Modal Window</h1>
+    <h1>修改图片名称</h1>
     <input type="text" id="dataDisplay" disabled>
     <input type="text" id="dataChange" placeholder="输入文件名即可，不需要后缀">
     <button id="ensure-change">确认更改</button>
@@ -14,8 +14,9 @@
         const { ipcRenderer } = require('electron');
         const path = require('path');
         let FILE = {
-            originPath: '',
-            changeName: ''
+            originPath: '', // 原始全路径
+            changeName: '', // 修改后的全路径
+            changeFileName: '' // 修改后的文件名
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -29,13 +30,17 @@
 
             document.getElementById('ensure-change').addEventListener('click', () => {
                 console.log('modal 关闭')
-                FILE.changeName = document.getElementById('dataChange').value + getFileSuffix(document.getElementById('dataDisplay').value)
+                const filePath  = document.getElementById('dataChange').value 
+                FILE.changeName = getFilePrefix(FILE.originPath) + filePath + getFileSuffix(FILE.originPath)
+                FILE.changeFileName = filePath+ getFileSuffix(FILE.originPath)
                 ipcRenderer.send('modalToOther', FILE)
-                window.close();
                 console.log('modal发送数据', FILE, "并清空");
+                
+                window.close();
                 FILE = {
                     originPath: '',
-                    changeName: ''
+                    changeName: '',
+                    changeFileName: ''
                 }
             });
         })
@@ -59,6 +64,15 @@
             const suffix = path.parse(fileName).ext;
             return suffix
         }
+        function getFilePrefix(fileName) {
+            const lastBackslashIndex = fileName.lastIndexOf("/");
+            const prefix = fileName.substring(0, lastBackslashIndex + 1); // 包含末尾的反斜杠
+            console.log('see getFilePrefix:', fileName,lastBackslashIndex, prefix);
+            return prefix.replace("file:///", "").replace(/\//g, "\\") // 去掉file://
+            // return prefix.replace(/\//g, "\\") // 去掉file://
+            // return prefix
+        }
+        
     </script>
 </body>
 

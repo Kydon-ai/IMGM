@@ -175,10 +175,12 @@ function IPCRegister(win) {
   });
   ipcMain.on("modalToOther", (event, FILE) => {
     // 更新缓存中的数据，原地更新
-    let imgList = store.get("imgList");
+    // let imgList = store.get("imgList");
+    let imgList = store.get("targetList");
+    
     FILE.originPath = convertFileUrlToPath(FILE.originPath);
     console.log(
-      "打印imgList",
+      "print targetList",
       FILE
       // imageList
     );
@@ -187,19 +189,20 @@ function IPCRegister(win) {
     // }
     for (let i = 0; i < imgList.length; i++) {
       if (imgList[i] == FILE.originPath) {
-        console.log("查找到图片", i, imgList[i]);
+        console.log("find the target img:", i, imgList[i]);
         var targetList = imgList[i].split("/");
         // console.log("修改后图片", i, targetList);
         targetList[targetList.length - 1] = FILE.changeName;
         imgList[i] = targetList.join("/");
-        console.log("修改后图片", i, imgList[i]);
+        console.log("the modify img info:", i, imgList[i]);
         // console.log("修改后图片", i, targetList.join("/"));
         break;
       }
     }
     store.set("imgList", imgList);
     // 将实际文件改名
-    rename(FILE.originPath, FILE.changeName);
+    console.log('before rename', FILE.originPath, FILE.changeFileName);
+    rename(FILE.originPath, FILE.changeFileName);
     // 调用刷新，取8个图片将图片按照新的url渲染
 
     // 先不更改，通知win
@@ -207,6 +210,7 @@ function IPCRegister(win) {
   });
 }
 function createModalWindow(props) {
+  console.log('see in to props：', props);
   if (modalWindow) {
     return "新建失败，模态框已存在";
   }
@@ -295,13 +299,17 @@ app.whenReady().then(() => {
 // 获取纯净的本地路径
 function convertFileUrlToPath(fileUrl) {
   // 移除file:///协议头，并将其他部分进行解码
-  const path = decodeURIComponent(fileUrl.replace("file://", ""));
+  // const path = decodeURIComponent(fileUrl.replace("file://", "").trim("/"));
+  myPath = fileUrl.replace(/^file:\/\//, "")  // 移除 file://
+    .replace(/^\/([a-z]:)/i, "$1")   // 修复 Windows 路径开头的斜杠（如 /C:/ → C:/）
+    .replace(/\//g, path.sep)        // 统一为当前系统的路径分隔符
   // 根据操作系统不同，可能需要处理路径分隔符
-  return path;
+  return myPath;
 }
 
 function rename(oldPath, fileName) {
   const newPath = path.join(path.dirname(oldPath), fileName);
+  console.log('renames', oldPath,  newPath);
   fs.rename(oldPath, newPath, (err) => {
     if (err) {
       console.error("重命名失败:", err);
