@@ -20,7 +20,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (img && img.tagName === "IMG") {
         try {
           // await copyImageToClipboard(img.src); // 异步调用canvas
-          copyImage(img.src); // 创建临时dom
+          let mode = await window.electron.getData("mode");
+          if (mode === "local")  copyImage(img.src); // 创建临时dom
+          // else if (mode === "rir") copyImageToClipboard(img.src);
+          else if (mode === "rir") {
+            let result = await window.electron.clipboard.copyWebImage(img.src); // 直接调用electron的api
+            window.electron.showMessage(result.success ? 'success':'error' , '复制' + (result.success ? '成功' : '失败') );
+          }
+          else {
+            window.electron.showMessage('error', '未知模式，请先以任意一种方式获取图片列表！！');
+          }
           // alert("Image copied to clipboard!");
           // 直接使用这个img的dom，暂未写
         } catch (err) {
@@ -94,7 +103,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         // scanImagesInDirectory(path)
         let imgList = await window.electron.scanDir(filePath);
         // await window.electron.setData('imgList',imgList);
-        alert("搜索完毕");
+        // alert("搜索完毕");
+        window.electron.showMessage("success", "搜索完毕!!!");
+        window.electron.setData("mode", "local");
         // imgList.array.forEach(element => {
         //     console.log(element);
         // });
@@ -106,9 +117,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         alert("文件路径为空或者无效");
       }
     });
-  // 刷新
+  // 刷新——本地刷新按钮
   document
     .getElementById("refresh-pic")
+    .addEventListener("click", async function () {
+      await window.electron.setData("page", 1);
+      document.getElementById("page-num").innerHTML = 1;
+      
+      let MaxPageList = await window.electron.getData("imgList");
+      let MaxPage = parseInt(MaxPageList.length / 8) + (MaxPageList.length % 8 ? 1 : 0);
+      document.getElementById("all-page-num").innerHTML = MaxPage;
+
+      await window.electron.refresh();
+    });
+  // 刷新——RIR刷新按钮
+
+  document
+    .getElementById("rir-refresh-pic")
     .addEventListener("click", async function () {
       await window.electron.setData("page", 1);
       document.getElementById("page-num").innerHTML = 1;
@@ -152,6 +177,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       let store = await window.electron.getCache();
       console.log("打印当前缓存", store);
     });
+  // 本地文件名称模糊 搜索按钮的事件
   document
     .getElementById("search-button")
     .addEventListener("click", async function () {
@@ -167,6 +193,46 @@ document.addEventListener("DOMContentLoaded", async () => {
       let MaxPage = parseInt(imgList.length / 8) + (imgList.length % 8 ? 1 : 0);
       document.getElementById("all-page-num").innerHTML = MaxPage;
       await window.electron.refresh();
+    });
+  // RIR文件名称模糊 搜索按钮的事件
+  // 因为和local的逻辑相同，直接修改个ID就行，交给rir-parse-button去做就好了
+  document
+    .getElementById("rir-search-button")
+    .addEventListener("click", async function () {
+      // 获取搜索框的内容
+      searchText = document.getElementById("search-input").value;
+      console.log("Blur the content of the search box：", searchText);
+      // 拿targetList进行模糊搜索,获得的列表写入imgList
+      targetList = await window.electron.getData("targetList");
+      console.log("View incoming parameters：", targetList, searchText);
+      imgList = filterPictures(targetList, searchText);
+      await window.electron.setData("imgList", imgList);
+
+      let MaxPage = parseInt(imgList.length / 8) + (imgList.length % 8 ? 1 : 0);
+      document.getElementById("all-page-num").innerHTML = MaxPage;
+      await window.electron.refresh();
+    });
+  // RIR文件解析按钮
+  document
+    .getElementById("rir-parse-button")
+    .addEventListener("click", async function () {
+      let url = document.getElementById("rir-parse-input").value + "?timestamp=" + Date.now();
+      try {
+        let result = await loadModuleVariable(url)
+        // console.log('xxx',result);
+        result.list = result.list.map((element) => {
+          return result.target + element; // ✅ 返回修改后的值
+        });
+        console.log('xxx',result.list);
+        await window.electron.setData("targetList", result.list);
+        await window.electron.setData("imgList", result.list);
+        await window.electron.refresh();
+        // 更新文本
+        document.getElementById("rir-file-path").innerHTML = result.target;
+        window.electron.setData("mode", "rir");
+      } catch (error) {
+        console.error("Could not open modal: ", error);
+      }
     });
   // 函数区
 });
@@ -237,6 +303,7 @@ function copyImage(imgUrl) {
   // 创建一个img的dom，用来承载图片
   // 创建 img 元素并设置 src 属性
   const tempImg = document.createElement("img");
+  tempImg.crossOrigin = "Anonymous"; // 允许跨域
   tempImg.src = imgUrl;
   console.log("打印地址", tempImg.src);
   // 将 div 添加到 document
@@ -250,6 +317,7 @@ function copyImage(imgUrl) {
 
   // 执行复制命令
   document.execCommand("copy");
+  // clipboard.writeImage(tempImg);
 
   // 清理选择和临时元素
   window.getSelection().removeAllRanges();
@@ -263,7 +331,7 @@ function copyImage(imgUrl) {
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // 转义正则表达式中的特殊字符
 }
-
+// 图片模糊搜索（筛选功能）
 function filterPictures(picList, userInput) {
   // 将 userInput 分割为字符，并对每个字符进行转义
   const escapedInput = userInput.split("").map(escapeRegExp).join("(.*?)");
@@ -283,4 +351,20 @@ function filterPictures(picList, userInput) {
     // 测试文件名是否匹配正则
     return regex.test(nameWithoutExtension);
   });
+}
+// 加载RIR 的 JS文件
+async function loadModuleVariable(url) {
+    try {
+        const module = await import(url);
+        // 假设模块导出了 `someExportedVar`
+        // console.log('see module', module);
+        if (module.default) {
+            return module.default;
+        } else {
+            throw new Error('模块未导出目标变量');
+        }
+    } catch (error) {
+        console.error('加载模块失败:', error);
+        return null;
+    }
 }

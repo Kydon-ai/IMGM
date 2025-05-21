@@ -1,6 +1,6 @@
 // 这个脚本用来搭建NodeJS API和electron链接的桥梁
-const { contextBridge, ipcRenderer, Notification } = require("electron");
-
+const { contextBridge, ipcRenderer, Notification,clipboard, nativeImage } = require("electron");
+// const { clipboard, nativeImage } = require('electron');
 // 这个样式是写在index.html文件当中，和渲染进程绑在一起，所以需要将他放在预加载脚本，
 // 放在main，加载不了样式就会失效
 const { Notyf } = require("notyf");
@@ -12,6 +12,33 @@ const { Notyf } = require("notyf");
 // 还是将导入的库都放到这里？？
 // 我倾向于后者，在main里面使用document会出问题
 contextBridge.exposeInMainWorld("electron", {
+  clipboard: {
+    copyWebImage: async (url) => {
+      try {
+        // 1. 获取网络图片并转为Blob
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+        
+        const blob = await response.blob();
+        
+        // 2. 将Blob转为DataURL
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+
+        // 3. 通过Electron API写入剪贴板
+        const image = nativeImage.createFromDataURL(dataUrl);
+        clipboard.writeImage(image);
+        
+        return { success: true };
+      } catch (error) {
+        console.error('复制失败:', error);
+        return { success: false, error: error.message };
+      }
+    }
+  },
   ipcRenderer: {
     send: (channel, data) => ipcRenderer.send(channel, data),
     on: (channel, func) =>
@@ -60,7 +87,7 @@ function showMessage(type, msg) {
     duration: 1500, //显示时长(ms)
     position: { x: "center", y: "top" }, // 参见https://carlosroso.com/notyf/
     // dismissible: true ,// 显示关闭按钮
-    //  backgroundColor: '#FF5733', // 背景颜色
+    // backgroundColor: '#FF5733', // 背景颜色
     // icon: 'check-circle'
     ripple: true, // 启用涟漪
     // 最后还可以使用 types自定义
@@ -124,4 +151,15 @@ function setImgUrl(pageOfImages) {
     }
   }
   
+}
+
+// 将网络图片转为DataURL
+async function fetchImageAsDataURL(url) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
 }

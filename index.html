@@ -84,7 +84,7 @@
             align-items: center;
         }
 
-        #search-input {
+        #search-input,#rir-search-input,#rir-parse-input {
             padding: 10px 12px;
             border: 1px solid #ddd;
             border-radius: 6px 0 0 6px;
@@ -107,10 +107,12 @@
         }
 
         #file-path {
+        }
+		.url-style {
             font-weight: bold;
             color: #4285f4;
             margin-left: 5px;
-        }
+		}
 
         /* 图片展示区域 - 修复高度问题 */
         .image-container {
@@ -123,7 +125,7 @@
             grid-template-columns: repeat(4, 1fr); /* 确保4列 */
             grid-auto-rows: 1fr; /* 所有行等高 */
             gap: 15px;
-            padding: 10px 0;
+            /* padding: 10px 0; */
         }
 
         .img-item {
@@ -218,7 +220,7 @@
 <body>
     <link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
 
-    <p>请选择扫描文件夹路径：<span id="file-path"></span></p>
+    <p>请选择扫描文件夹路径：<span id="file-path" class="url-style"></span></p>
     
     <!-- 工具栏 -->
     <div class="toolbar">
@@ -247,14 +249,36 @@
         
         <div class="toolbar-right">
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="搜索图片...">
+                <input type="text" id="search-input" placeholder="请输入图片名称以搜索...">
                 <button id="search-button" class="search-btn">
                     <span class="icon">🔍</span>
                 </button>
             </div>
         </div>
     </div>
-
+	<p>当前RIR图片解析路径：<span id="rir-file-path" class="url-style">暂未获取到RIR解析路径...</span></p>
+	<div class="toolbar" >
+		<div class="toolbar-left">
+			<div class="search-box">
+				<input type="text" id="rir-parse-input" placeholder="请输入RIR文件地址...">
+				<button id="rir-parse-button" class="search-btn">
+					<span class="icon">🔍</span>
+				</button>
+			</div>
+			<button id="rir-refresh-pic" class="toolbar-btn">
+				<span class="icon">🔄</span> 刷新
+			</button>
+		</div>
+		<div class="toolbar-right">
+            <div class="search-box">
+                <input type="text" id="rir-search-input" placeholder="请输入图片名称以搜索...">
+                <button id="rir-search-button" class="search-btn">
+                    <span class="icon">🔍</span>
+                </button>
+            </div>
+        </div>
+		
+	</div>
     <!-- 图片展示区域 -->
     <div class="image-container">
         <div class="grid-img">
