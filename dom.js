@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("rir-search-button")
     .addEventListener("click", async function () {
       // 获取搜索框的内容
-      searchText = document.getElementById("search-input").value;
+      searchText = document.getElementById("rir-search-input").value;
       console.log("Blur the content of the search box：", searchText);
       // 拿targetList进行模糊搜索,获得的列表写入imgList
       targetList = await window.electron.getData("targetList");
