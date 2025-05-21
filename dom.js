@@ -230,6 +230,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 更新文本
         document.getElementById("rir-file-path").innerHTML = result.target;
         window.electron.setData("mode", "rir");
+        // 更新总页数
+        let MaxPageList = await window.electron.getData("imgList");
+        let MaxPage = parseInt(MaxPageList.length / 8) + (MaxPageList.length % 8 ? 1 : 0);
+        document.getElementById("all-page-num").innerHTML = MaxPage;
       } catch (error) {
         console.error("Could not open modal: ", error);
       }

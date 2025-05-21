@@ -55,7 +55,7 @@ const createWindow = () => {
   console.log("打印对象", win.webContents);
   function sysInfo(msg) {
     let notification = new Notification({
-      title: "封装消息",
+      title: "IMGM已启动",
       body: msg,
     });
     notification.show();
