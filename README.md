@@ -92,19 +92,19 @@ npm run bingo
 
 进入首页,你会看到如下界面:(理论上啥也没有应该是加载你的用户图片文件夹)
 
-![](https://github.com/theOnlyUnique/IMGM/blob/master/public/img/img1.png?raw=true)
+![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_1.png)
 
 首先点击选择文件夹按钮,选取你存放图片的目标文件夹
 
-![](https://github.com/theOnlyUnique/IMGM/blob/master/public/img/img2.png?raw=true)
+![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_2.png)
 
 选择完毕后扫描路径将显示你刚才选取的路径,然后点击开始搜索,应用将对你所选目录进行扫描,选取所有的图片资源(jpg,jpeg,png,gif 四种类型)
 
-![](https://github.com/theOnlyUnique/IMGM/blob/master/public/img/img3.png?raw=true)
+![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_3.png)
 
 扫描完成后点击确定,然后点击刷新图片即可开始查看目标文件夹下的图片资源了,您可以对他们进行重命名和快速复制
 
-![](https://github.com/theOnlyUnique/IMGM/blob/master/public/img/img4.png?raw=true)
+![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_4.png)
 
 # 参考资料📚
 
@@ -140,11 +140,11 @@ https://blog.csdn.net/ZYS10000/article/details/134913618<br>
 
 # 功能预告📢
 
-1.上线标签管理功能<br>
-2.UI 美化(基础样式,窗口工具栏调整,窗口行为调整)<br>
-3.打包优化<br> 
-4.模糊搜索算法优化,深度递归逻辑优化<br> 
-5.多平台的测试优化<br>
+- [ ] 上线标签管理功能
+- [x] UI 美化(基础样式,窗口工具栏调整,窗口行为调整)
+- [ ] 打包优化
+- [x] 模糊搜索算法优化,深度递归逻辑优化
+- [ ] 多平台的测试优化
 
 # 问题记录📝
 
