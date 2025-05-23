@@ -116,7 +116,7 @@ RIR(Remote image retrieval),是一种基于IMGM项目开发出的新的远程图
 
 输入建立好的RIR远程地址，然后点击搜索，如果解析成功即可自动获取RIR远程图片。建议不要开启“禁用缓存”功能，这样可以利用您的本地强缓存来加快您的图片加载速度！
 
-
+![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_5.png)
 
 ## 5.2RIR手动建站
 
