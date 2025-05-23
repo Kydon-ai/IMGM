@@ -3,7 +3,10 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
-    asar: true,
+    name: 'IMGM', // 应用名称
+    asar: true, // 是否打包为asar
+    icon: './public/icon', // 图标路径
+    executableName: 'imgm', // 强制指定可执行文件名称（所有平台）
   },
   rebuildConfig: {},
   makers: [
