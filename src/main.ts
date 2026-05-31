@@ -61,7 +61,6 @@ const createWindow = (): void => {
   }
 
   IPCRegister(win);
-  win.webContents.openDevTools();
 };
 
 function IPCRegister(currentWin: BrowserWindow): void {
