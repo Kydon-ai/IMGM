@@ -50,9 +50,7 @@ contextBridge.exposeInMainWorld("electron", {
   scanDir: (dirPath: string) => ipcRenderer.invoke("scanDir", dirPath),
   checkDir: (dirPath: string) => ipcRenderer.invoke("checkDir", dirPath),
   getData: (key: string) => ipcRenderer.invoke("getData", key),
-  setData: (key: string, data: unknown) => {
-    ipcRenderer.invoke("setData", key, data);
-  },
+  setData: (key: string, data: unknown) => ipcRenderer.invoke("setData", key, data),
   refresh: () => {
     refreshPage();
     showMessage("success", "刷新当前浏览");
@@ -61,8 +59,8 @@ contextBridge.exposeInMainWorld("electron", {
   showMessage: (type: string, msg: string) => {
     showMessage(type, msg);
   },
-  getUser: () => {
-    const userInfo = ipcRenderer.invoke("getUserInfo");
+  getUser: async () => {
+    const userInfo = await ipcRenderer.invoke("getUserInfo");
     showMessage("success", `当前用户：${String((userInfo as any)?.username || "")}`);
     return userInfo;
   },

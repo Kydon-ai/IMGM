@@ -332,18 +332,6 @@
         </div>
     </div>
 
-    <script src="dom.js"></script>
-    <script>
-        // 确保复制功能正常工作
-        document.querySelectorAll(".copy-btn").forEach((button) => {
-            button.addEventListener("click", async () => {
-                const img = button.previousElementSibling;
-                if (img && img.tagName === "IMG") {
-                    console.log("复制图片:", img.src);
-                    // 您的原有复制逻辑
-                }
-            });
-        });
-    </script>
+    <script src="./dist/dom.js"></script>
 </body>
 </html>
