@@ -17,7 +17,9 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
     "@electron-forge/plugin-fuses": "^7.5.0",
     "@electron/fuses": "^1.8.0",
-    "electron": "^33.0.2"
+    "@types/node": "^25.9.1",
+    "electron": "^33.0.2",
+    "typescript": "^6.0.3"
   },
   "scripts": {
     "start": "electron-forge start",
