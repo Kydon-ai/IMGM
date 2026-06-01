@@ -153,7 +153,7 @@ def scan_images_recursive(folder_path, output_js_file="image_list.js"):
     image_files.sort()
     result = {}
     result['list'] = image_files
-    result['target'] = "http://www.qidong.tech:5173/resource/pic/"
+    result['target'] = "https://www.qidong.tech:5173/resource/pic/"
     # 生成 JS 代码
     js_code = f"const rir_result = {json.dumps(result, indent=2, ensure_ascii=False)};\n"
     js_code += "export default rir_result;"
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
 > 本项目示例访问RIR文件地址，欢迎尝试喵：
 >
-> http://www.qidong.tech:5173/resource/pic/image_list.js
+> https://www.qidong.tech:5173/resource/pic/image_list.js
 
 # 参考资料📚
 
