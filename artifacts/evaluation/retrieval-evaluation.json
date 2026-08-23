@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-08-23T16:19:48.579Z",
+  "k": 8,
+  "queryCount": 69,
+  "precisionAt8": 1,
+  "passed": true,
+  "target": 0.95,
+  "categories": [
+    {
+      "category": "高雅人士企鹅原图合集",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "吉伊卡哇1",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "吉伊卡哇2",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "吉伊卡哇3",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "猫和老鼠",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "纳西妲",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "前途一片xx",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "贴吧表情",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "透明底",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "乌萨奇",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "原神",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "APP图标",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "capoos",
+      "queries": 5,
+      "relevant": 40,
+      "returned": 40,
+      "precisionAt8": 1
+    },
+    {
+      "category": "chacha",
+      "queries": 4,
+      "relevant": 32,
+      "returned": 32,
+      "precisionAt8": 1
+    }
+  ],
+  "excludedCategories": [
+    "部落冲突",
+    "七龙珠",
+    "熊出没",
+    "自建",
+    "geshinImpact",
+    "GGB",
+    "未分类"
+  ]
+}

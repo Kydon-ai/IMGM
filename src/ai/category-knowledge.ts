@@ -99,10 +99,29 @@ export function getCategoryTags(category: string): string[] {
 /** 根据用户文本识别已知图片类别。 */
 export function detectCategory(input: string): string | undefined {
   const normalizedInput = input.normalize("NFKC").toLowerCase();
-  return Object.entries(CATEGORY_KNOWLEDGE).find(([category, knowledge]) => {
-    const candidates = [category, ...knowledge.aliases].map((item) => item.normalize("NFKC").toLowerCase());
-    return candidates.some((candidate) => normalizedInput.includes(candidate));
-  })?.[0];
+  const matches = Object.entries(CATEGORY_KNOWLEDGE).flatMap(([category, knowledge]) => {
+    const normalizedCategory = category.normalize("NFKC").toLowerCase();
+    const categoryScore = normalizedInput.includes(normalizedCategory) ? 1000 + normalizedCategory.length : 0;
+    const aliasScore = Math.max(
+      0,
+      ...knowledge.aliases
+        .map((item) => item.normalize("NFKC").toLowerCase())
+        .filter((alias) => normalizedInput.includes(alias))
+        .map((alias) => alias.length)
+    );
+    const score = Math.max(categoryScore, aliasScore);
+    return score > 0 ? [{ category, score }] : [];
+  });
+  matches.sort((left, right) => right.score - left.score);
+  return matches[0]?.category;
+}
+
+/** 返回检索时应视为同一语义系列的目录类别。 */
+export function getCategoryFamily(category: string): string[] {
+  if (category.startsWith("吉伊卡哇")) {
+    return ["吉伊卡哇1", "吉伊卡哇2", "吉伊卡哇3"];
+  }
+  return [category];
 }
 
 /** 将文本中的类别别名补充为统一的检索特征。 */
