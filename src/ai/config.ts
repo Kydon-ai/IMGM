@@ -1,5 +1,6 @@
 import path from "path";
 import dotenv from "dotenv";
+import fs from "fs";
 
 export type AiConfig = {
   deepseekApiKey: string;
@@ -15,7 +16,11 @@ let envLoaded = false;
 /** 仅加载一次项目根目录下的环境变量。 */
 function loadEnvironment(): void {
   if (!envLoaded) {
-    dotenv.config({ path: path.resolve(process.cwd(), ".env"), quiet: true });
+    const candidates = [path.resolve(process.cwd(), ".env"), path.join(path.dirname(process.execPath), ".env")];
+    const envPath = candidates.find((candidate) => fs.existsSync(candidate));
+    if (envPath) {
+      dotenv.config({ path: envPath, quiet: true });
+    }
     envLoaded = true;
   }
 }

@@ -212,6 +212,8 @@ npm run milvus:start
 
 默认连接 `localhost:19530`，集合名为 `imgm_images_v1`。可在 `.env` 中通过 `MILVUS_ADDRESS` 和 `MILVUS_COLLECTION` 覆盖。
 
+发布版不会把 `.env` 打进 ASAR。使用打包后的程序时，请把配置好的 `.env` 放在 `imgm.exe` 同目录；密钥始终保持为外置文件。
+
 ## 6.2 生成并索引数据集
 
 任务指定目录可直接使用默认命令；也可以在参数中传入其他图片目录和输出目录。

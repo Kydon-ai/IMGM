@@ -7,6 +7,17 @@ module.exports = {
     asar: true, // 是否打包为asar
     icon: './public/icon', // 图标路径
     executableName: 'imgm', // 强制指定可执行文件名称（所有平台）
+    // 排除开发数据、密钥、源码和测试，避免泄密并控制安装包体积。
+    ignore: [
+      /^\/\.env(?:\.example)?$/,
+      /^\/data(?:\/|$)/,
+      /^\/development_task(?:\/|$)/,
+      /^\/artifacts(?:\/|$)/,
+      /^\/infrastructure(?:\/|$)/,
+      /^\/src(?:\/|$)/,
+      /^\/dist\/tests(?:\/|$)/,
+      /^\/(?:docker-compose\.milvus\.yml|README\.md|test\.html|test\.json|tsconfig\.json)$/,
+    ],
   },
   rebuildConfig: {},
   makers: [
