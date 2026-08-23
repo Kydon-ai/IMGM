@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
+/** 绑定本地和远程图片的复制操作。 */
 function bindCopyActions(): void {
   document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -151,6 +152,7 @@ function bindCopyActions(): void {
   });
 }
 
+/** 绑定图片重命名模态框入口。 */
 function bindRenameActions(): void {
   document.querySelectorAll<HTMLButtonElement>(".rename-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -168,6 +170,7 @@ function bindRenameActions(): void {
   });
 }
 
+/** 重置分页并刷新图片列表。 */
 async function refreshAndResetPage(): Promise<void> {
   await window.electron.setData("page", 1);
   getElementByIdOrThrow<HTMLElement>("page-num").textContent = "1";
@@ -178,6 +181,7 @@ async function refreshAndResetPage(): Promise<void> {
   await window.electron.refresh();
 }
 
+/** 计算八张一页时的最大页数。 */
 function getMaxPage(imgList: string[]): number {
   if (!imgList || imgList.length === 0) {
     return 1;
@@ -185,6 +189,7 @@ function getMaxPage(imgList: string[]): number {
   return Math.floor(imgList.length / PAGE_SIZE) + (imgList.length % PAGE_SIZE ? 1 : 0);
 }
 
+/** 获取必需 DOM 元素，不存在时立即抛错。 */
 function getElementByIdOrThrow<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) {
@@ -193,6 +198,7 @@ function getElementByIdOrThrow<T extends HTMLElement>(id: string): T {
   return element as T;
 }
 
+/** 通过浏览器剪贴板 API 复制图片二进制。 */
 async function copyImageToClipboard(imageUrl: string): Promise<void> {
   const response = await fetch(imageUrl);
   const contentType = response.headers.get("Content-Type") || "image/png";
@@ -243,6 +249,7 @@ async function copyImageToClipboard(imageUrl: string): Promise<void> {
   });
 }
 
+/** 使用 DOM 选区复制本地图片。 */
 function copyImage(imgUrl: string): void {
   const tempImg = document.createElement("img");
   tempImg.crossOrigin = "Anonymous";
@@ -269,10 +276,12 @@ function copyImage(imgUrl: string): void {
   window.electron.showMessage("success", "图片已复制到粘贴板");
 }
 
+/** 转义用户输入中的正则表达式字符。 */
 function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** 使用字符顺序模糊匹配过滤图片名称。 */
 function filterPictures(picList: string[], userInput: string): string[] {
   const escapedInput = userInput.split("").map(escapeRegExp).join("(.*?)");
   const regexPattern = `(.*?)${escapedInput}(.*?)`;
@@ -292,6 +301,7 @@ type RirPayload = {
   list: string[];
 };
 
+/** 动态加载远程 RIR 模块并返回图片清单。 */
 async function loadModuleVariable(url: string): Promise<RirPayload | null> {
   try {
     const module = await import(url);

@@ -43,16 +43,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/** 从 file URL 中提取原始文件名。 */
 function getRawName(filePath: string): string {
   const url = new URL(filePath);
   const pathname = url.pathname.slice(1);
   return path.basename(pathname);
 }
 
+/** 获取文件扩展名。 */
 function getFileSuffix(fileName: string): string {
   return path.parse(fileName).ext;
 }
 
+/** 获取并规范化文件所在目录前缀。 */
 function getFilePrefix(fileName: string): string {
   const lastSlashIndex = fileName.lastIndexOf("/");
   const prefix = fileName.substring(0, lastSlashIndex + 1);

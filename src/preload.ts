@@ -72,8 +72,17 @@ contextBridge.exposeInMainWorld("electron", {
     const msg = await ipcRenderer.invoke("openRenameModel", datas);
     return msg;
   },
+  ai: {
+    ask: (request: unknown) => ipcRenderer.invoke("aiAsk", request),
+    onEvent: (callback: (event: unknown) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, chatEvent: unknown): void => callback(chatEvent);
+      ipcRenderer.on("aiChatEvent", listener);
+      return () => ipcRenderer.removeListener("aiChatEvent", listener);
+    },
+  },
 });
 
+/** 使用 Notyf 显示统一的成功或错误消息。 */
 function showMessage(type: string, msg: string): void {
   const notyf = new Notyf({
     duration: 1500,
@@ -90,6 +99,7 @@ function showMessage(type: string, msg: string): void {
   }
 }
 
+/** 根据缓存页码刷新主图片区域。 */
 async function refreshPage(): Promise<void> {
   const imgList = (await ipcRenderer.invoke("getData", "imgList")) as string[];
   const currentPage = (await ipcRenderer.invoke("getData", "page")) as number;
@@ -99,6 +109,7 @@ async function refreshPage(): Promise<void> {
   setImgUrl(pageOfImages);
 }
 
+/** 从完整图片列表中截取当前页数据。 */
 function getImageList(imgList: string[], currentPage: number, pageSize: number): string[] {
   const left = pageSize * (currentPage - 1);
   const right = Math.min(left + pageSize, imgList.length);
@@ -111,12 +122,13 @@ function getImageList(imgList: string[], currentPage: number, pageSize: number):
   return pageOfImages;
 }
 
+/** 把当前页图片绑定到八个展示槽位。 */
 function setImgUrl(pageOfImages: string[]): void {
-  const imgElements = document.getElementsByTagName("img");
-  const renameElements = document.getElementsByClassName("rename-btn");
+  const imgElements = document.querySelectorAll<HTMLImageElement>(".grid-img .img-item img");
+  const renameElements = document.querySelectorAll<HTMLButtonElement>(".grid-img .rename-btn");
 
   for (let i = 0; i < imgElements.length; i += 1) {
-    const renameElement = renameElements[i] as HTMLButtonElement | undefined;
+    const renameElement = renameElements[i];
     if (i < pageOfImages.length) {
       imgElements[i].src = pageOfImages[i];
       if (renameElement) {

@@ -3,6 +3,7 @@ import Store from "electron-store";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
 
 const store = new Store();
 
@@ -25,13 +26,14 @@ type ModalFilePayload = {
 
 const createWindow = (): void => {
   win = new BrowserWindow({
-    width: 800,
+    width: 1220,
     height: 710,
+    minWidth: 1080,
     minHeight: 710,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      nodeIntegration: true,
+      nodeIntegration: false,
     },
   });
 
@@ -61,8 +63,10 @@ const createWindow = (): void => {
   }
 
   IPCRegister(win);
+  registerAiIpc();
 };
 
+/** 注册主窗口所需的文件、缓存与重命名 IPC。 */
 function IPCRegister(currentWin: BrowserWindow): void {
   ipcMain.handle("openDirectory", async () => {
     const result = await dialog.showOpenDialog(currentWin, {
@@ -152,6 +156,7 @@ function IPCRegister(currentWin: BrowserWindow): void {
   });
 }
 
+/** 创建图片重命名模态窗口。 */
 function createModalWindow(props: { src: string }): string {
   if (modalWindow) {
     return "新建失败，模态框已存在";
@@ -187,6 +192,7 @@ function createModalWindow(props: { src: string }): string {
   return "新建成功";
 }
 
+/** 递归遍历目录并收集图片路径。 */
 function traverseDirectory(dirPath: string, imagesList: string[]): void {
   const files = fs.readdirSync(dirPath);
 
@@ -202,22 +208,26 @@ function traverseDirectory(dirPath: string, imagesList: string[]): void {
   });
 }
 
+/** 判断文件扩展名是否属于支持的图片格式。 */
 function isImageFile(file: string): boolean {
   const imageExtensions = [".jpg", ".jpeg", ".png", ".gif"];
   const ext = path.extname(file).toLowerCase();
   return imageExtensions.includes(ext);
 }
 
+/** 扫描目录并返回全部图片路径。 */
 function scanImagesInDirectory(dirPath: string): string[] {
   const dataList: string[] = [];
   traverseDirectory(dirPath, dataList);
   return dataList;
 }
 
+/** 获取当前操作系统用户信息。 */
 function getCurrentUserInfo(): os.UserInfo<string> {
   return os.userInfo();
 }
 
+/** 获取当前运行平台。 */
 function getCurrentPlatform(): NodeJS.Platform {
   return os.platform();
 }
@@ -226,6 +236,11 @@ app.whenReady().then(() => {
   createWindow();
 });
 
+app.on("before-quit", () => {
+  void closeAiRuntime();
+});
+
+/** 将 file URL 转换为当前平台的文件系统路径。 */
 function convertFileUrlToPath(fileUrl: string): string {
   const normalizedPath = fileUrl
     .replace(/^file:\/\//, "")
@@ -235,6 +250,7 @@ function convertFileUrlToPath(fileUrl: string): string {
   return normalizedPath;
 }
 
+/** 把图片文件重命名为用户指定名称。 */
 function rename(oldPath: string, fileName: string): void {
   const newPath = path.join(path.dirname(oldPath), fileName);
   fs.rename(oldPath, newPath, (err) => {

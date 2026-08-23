@@ -1,5 +1,6 @@
 import { Document } from "@langchain/core/documents";
 import { ConsistencyLevelEnum, DataType, ErrorCode, MilvusClient } from "@zilliz/milvus2-sdk-node";
+import { pathToFileURL } from "url";
 import { getCategoryFamily } from "./category-knowledge";
 import { MetadataEmbeddings } from "./hash-embeddings";
 import { ImageMetadata, ImageSearchHit, SearchIntent } from "./types";
@@ -165,6 +166,7 @@ export class MilvusImageStore {
     return response.results.map((result) => ({
       id: String(result.id),
       filePath: String(result.filePath || ""),
+      url: pathToFileURL(String(result.filePath || "")).href,
       fileName: String(result.fileName || ""),
       category: String(result.category || ""),
       tags: JSON.parse(String(result.tagsJson || "[]")) as string[],

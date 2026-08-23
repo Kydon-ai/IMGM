@@ -42,6 +42,11 @@
     "bingo": "npx electron-forge import && npm run make"
   },
   "author": "LiuQidong",
+  "overrides": {
+    "thrift": {
+      "uuid": "11.1.0"
+    }
+  },
   "license": "ISC",
   "description": "图片读取工具"
 }

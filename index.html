@@ -215,10 +215,213 @@
             font-size: 14px;
             color: #555;
         }
+
+        body {
+            margin: 10px;
+            font-family: "Microsoft YaHei", system-ui, sans-serif;
+            color: #1f2937;
+            background: #f7f8fa;
+        }
+
+        .app-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 350px;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .image-browser {
+            min-width: 0;
+        }
+
+        .ai-panel {
+            position: sticky;
+            top: 10px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 20px);
+            min-height: 620px;
+            overflow: hidden;
+            border: 1px solid #dde3ec;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 8px 30px rgba(36, 55, 88, 0.12);
+        }
+
+        .ai-panel-header {
+            padding: 14px 16px 12px;
+            color: #fff;
+            background: linear-gradient(135deg, #245eea, #7048e8);
+        }
+
+        .ai-panel-header h2 {
+            margin: 0 0 4px;
+            font-size: 18px;
+        }
+
+        .ai-status {
+            min-height: 18px;
+            margin: 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.84);
+        }
+
+        .ai-messages {
+            flex: 1;
+            min-height: 140px;
+            overflow-y: auto;
+            padding: 14px;
+            background: #f7f8fc;
+        }
+
+        .ai-message {
+            width: fit-content;
+            max-width: 88%;
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 11px;
+            font-size: 13px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .ai-message.assistant {
+            border: 1px solid #e2e6ee;
+            border-bottom-left-radius: 3px;
+            background: #fff;
+        }
+
+        .ai-message.user {
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+            color: #fff;
+            background: #3569df;
+        }
+
+        .ai-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 14px 10px;
+            background: #f7f8fc;
+        }
+
+        .ai-suggestion {
+            padding: 5px 8px;
+            border: 1px solid #ccd7f7;
+            border-radius: 999px;
+            color: #3159b8;
+            background: #eef3ff;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .ai-results-section {
+            max-height: 245px;
+            overflow-y: auto;
+            padding: 10px 12px;
+            border-top: 1px solid #e8ebf1;
+        }
+
+        .ai-results-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #687187;
+        }
+
+        .ai-results {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .ai-result-card {
+            min-width: 0;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid #e0e5ee;
+            border-radius: 7px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ai-result-card img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .ai-result-card span {
+            display: block;
+            padding: 4px;
+            overflow: hidden;
+            font-size: 9px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ai-show-gallery {
+            padding: 3px 7px;
+            border: 1px solid #c7d4f9;
+            border-radius: 5px;
+            color: #3159b8;
+            background: #f2f5ff;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .ai-composer {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid #e8ebf1;
+        }
+
+        .ai-composer textarea {
+            min-height: 44px;
+            max-height: 110px;
+            padding: 8px 9px;
+            resize: vertical;
+            border: 1px solid #ccd2dd;
+            border-radius: 7px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .ai-composer textarea:focus {
+            border-color: #4773df;
+            box-shadow: 0 0 0 2px rgba(71, 115, 223, 0.13);
+        }
+
+        .ai-send {
+            align-self: end;
+            height: 38px;
+            padding: 0 13px;
+            border: none;
+            border-radius: 7px;
+            color: #fff;
+            background: #3569df;
+            cursor: pointer;
+        }
+
+        .ai-send:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
     </style>
 </head>
 <body>
     <link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
+
+    <div class="app-layout">
+    <main class="image-browser">
 
     <p>请选择扫描文件夹路径：<span id="file-path" class="url-style"></span></p>
     
@@ -332,6 +535,35 @@
         </div>
     </div>
 
+    </main>
+    <aside class="ai-panel" aria-label="AI 图片问答">
+        <header class="ai-panel-header">
+            <h2>AI 图片助手</h2>
+            <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p>
+        </header>
+        <div id="ai-messages" class="ai-messages" aria-live="polite">
+            <div class="ai-message assistant">告诉我你想找什么图片。例如：“找 8 张透明背景的咖波表情包”。</div>
+        </div>
+        <div class="ai-suggestions">
+            <button class="ai-suggestion" data-prompt="找 8 张可爱的咖波表情包">咖波表情</button>
+            <button class="ai-suggestion" data-prompt="帮我找透明背景的卡通素材">透明素材</button>
+            <button class="ai-suggestion" data-prompt="找一些高雅人士企鹅图片">企鹅素材</button>
+        </div>
+        <section class="ai-results-section">
+            <div class="ai-results-heading">
+                <span id="ai-results-count">检索结果</span>
+                <button id="ai-show-gallery" class="ai-show-gallery" type="button" disabled>在主图区查看</button>
+            </div>
+            <div id="ai-results" class="ai-results"></div>
+        </section>
+        <form id="ai-form" class="ai-composer">
+            <textarea id="ai-input" maxlength="2000" placeholder="描述想找的图片…" aria-label="AI 问题"></textarea>
+            <button id="ai-send" class="ai-send" type="submit">发送</button>
+        </form>
+    </aside>
+    </div>
+
     <script src="./dist/dom.js"></script>
+    <script src="./dist/ai-chat.js"></script>
 </body>
 </html>

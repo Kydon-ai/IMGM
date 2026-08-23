@@ -40,6 +40,7 @@ export type DatasetSummary = {
 export type ImageSearchHit = {
   id: string;
   filePath: string;
+  url: string;
   fileName: string;
   category: string;
   tags: string[];
