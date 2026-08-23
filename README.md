@@ -184,6 +184,71 @@ if __name__ == "__main__":
 >
 > https://www.qidong.tech:5173/resource/pic/image_list.js
 
+# 6.AI 图片 RAG 检索
+
+项目右侧新增 AI 图片助手。用户可以连续聊天，LangGraph 会依次解析检索意图、从 Milvus 取回 Top-8 图片，再由 DeepSeek 结合结果流式回答。
+
+```mermaid
+flowchart LR
+    A[本地图片目录] --> B[尺寸/透明度/动图/主色元数据]
+    B --> C[分层训练集与测试集]
+    C --> D[LangChain Document 与向量]
+    D --> E[(Milvus)]
+    F[用户对话] --> G[LangGraph 意图解析]
+    G --> E
+    E --> H[Top-8 图片]
+    H --> I[DeepSeek 流式回答]
+```
+
+## 6.1 环境准备
+
+1. 安装并启动 Docker Desktop。
+2. 复制 `.env.example` 为 `.env`，填写 `DEEPSEEK_API_KEY`；不要提交真实密钥。
+3. 启动 Milvus：
+
+```bash
+npm run milvus:start
+```
+
+默认连接 `localhost:19530`，集合名为 `imgm_images_v1`。可在 `.env` 中通过 `MILVUS_ADDRESS` 和 `MILVUS_COLLECTION` 覆盖。
+
+## 6.2 生成并索引数据集
+
+任务指定目录可直接使用默认命令；也可以在参数中传入其他图片目录和输出目录。
+
+```bash
+# 默认扫描 C:\Users\lqd\Pictures\人物头像
+npm run dataset:prepare
+
+# 自定义目录
+npm run dataset:prepare -- "D:\Pictures" "data\dataset"
+
+# 重建 Milvus 集合并写入全量数据
+npm run dataset:index
+```
+
+元数据包含目录类别、人工核验语义标签、文件名、格式、尺寸、横竖构图、动图、透明背景、主色与训练/测试标记。生成文件位于 `data/dataset`，Milvus 持久化数据位于 `data/milvus`，二者均不进入 Git。
+
+## 6.3 检索评测
+
+```bash
+npm run eval:retrieval
+```
+
+当前数据集共 7,375 张图片，按类别分层切分为训练集 5,897 张、测试集 1,478 张。69 条自然语言测试查询的 Precision@8 为 100%，通过 `>95%` 的验收目标。训练样本不足 8 张的类别不计入该指标，详情见 [检索评测报告](artifacts/evaluation/retrieval-evaluation.md)。
+
+## 6.4 常用命令
+
+| 命令 | 作用 |
+| --- | --- |
+| `npm test` | 构建并运行单元测试 |
+| `npm run milvus:status` | 查看 Milvus 健康状态 |
+| `npm run milvus:stop` | 停止 Milvus，保留数据 |
+| `npm run dataset:prepare` | 提取图片元数据并分层切分 |
+| `npm run dataset:index` | 重建并填充 Milvus 图片集合 |
+| `npm run eval:retrieval` | 计算并输出 Precision@8 |
+| `npm start` | 启动 Electron 应用 |
+
 # 参考资料📚
 
 环境配置：<br>
