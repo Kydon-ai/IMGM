@@ -3,3 +3,8 @@ dist
 out
 test
 data
+
+
+.env
+
+development_task/
