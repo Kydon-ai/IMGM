@@ -224,6 +224,12 @@ npm run dataset:prepare -- "D:\Pictures" "data\dataset"
 
 元数据包含目录类别、人工核验语义标签、文件名、格式、尺寸、横竖构图、动图、透明背景、主色与训练/测试标记。生成文件位于 `data/dataset`，SQLite 数据库路径由 `IMAGE_DB_PATH` 指定，不进入 Git。
 
+首次使用 AI 检索前，先执行下面的命令把文本向量模型和中文分词模型下载到 `data/models`；运行时会只读取本地模型，不在发送消息时临时联网下载。
+
+```bash
+npm run models:download
+```
+
 ## 6.3 检索评测
 
 ```bash
@@ -238,6 +244,7 @@ npm run eval:retrieval
 | --- | --- |
 | `npm test` | 构建并运行单元测试 |
 | `npm run dataset:prepare` | 提取图片元数据并分层切分 |
+| `npm run models:download` | 预下载本地 AI 检索模型 |
 | `npm run eval:retrieval` | 计算并输出 Precision@8 |
 | `npm start` | 启动 Electron 应用 |
 

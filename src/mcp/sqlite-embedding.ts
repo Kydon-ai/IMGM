@@ -1,5 +1,9 @@
+import { MetadataEmbeddings } from "../ai/hash-embeddings";
+import { configureTransformersEnv } from "../ai/transformers-config";
+
 const TEXT_MODEL_ID = "aurantium/clip-ViT-B-32-multilingual-v1";
 const TEXT_MODEL_DTYPE = "q8" as const;
+const metadataEmbeddings = new MetadataEmbeddings();
 
 let tokenizer: any = null;
 let textModel: any = null;
@@ -8,6 +12,7 @@ let transformers: any = null;
 
 async function loadTransformers(): Promise<any> {
   transformers ||= await import("@huggingface/transformers");
+  configureTransformersEnv(transformers.env, false);
   return transformers;
 }
 
@@ -23,9 +28,10 @@ async function initTextModel(): Promise<void> {
   initPromise = (async () => {
     const { AutoModel, AutoTokenizer } = await loadTransformers();
     console.error(`Loading SQLite search text model: ${TEXT_MODEL_ID}`);
-    tokenizer = await AutoTokenizer.from_pretrained(TEXT_MODEL_ID);
+    tokenizer = await AutoTokenizer.from_pretrained(TEXT_MODEL_ID, { local_files_only: true });
     textModel = await AutoModel.from_pretrained(TEXT_MODEL_ID, {
       dtype: TEXT_MODEL_DTYPE,
+      local_files_only: true,
     });
     console.error("SQLite search text model loaded");
   })().catch((error) => {
@@ -52,6 +58,11 @@ export async function embedText(text: string): Promise<number[]> {
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) {
     return [];
+  }
+
+  // 本地导入的 app.db 使用同一套轻量元数据向量，避免 Electron 首次请求下载并加载 ONNX 模型。
+  if ((process.env.IMAGE_EMBEDDING_PROVIDER || "clip").toLowerCase() !== "clip") {
+    return metadataEmbeddings.embedDocuments(texts);
   }
 
   await initTextModel();

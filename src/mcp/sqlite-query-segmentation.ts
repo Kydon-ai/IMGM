@@ -1,3 +1,5 @@
+import { configureTransformersEnv } from "../ai/transformers-config";
+
 const SEGMENTATION_MODEL_ID = "Xenova/bert-base-chinese-ws";
 
 const STOP_WORDS = new Set([
@@ -26,6 +28,7 @@ let transformers: any = null;
 
 async function loadTransformers(): Promise<any> {
   transformers ||= await import("@huggingface/transformers");
+  configureTransformersEnv(transformers.env, false);
   return transformers;
 }
 
@@ -41,7 +44,10 @@ async function initSegmenter(): Promise<void> {
   initPromise = (async () => {
     const { pipeline } = await loadTransformers();
     console.error(`Loading SQLite search tokenizer: ${SEGMENTATION_MODEL_ID}`);
-    segmenter = await pipeline("token-classification", SEGMENTATION_MODEL_ID, { dtype: "q8" });
+    segmenter = await pipeline("token-classification", SEGMENTATION_MODEL_ID, {
+      dtype: "q8",
+      local_files_only: true,
+    });
     console.error("SQLite search tokenizer loaded");
   })().catch((error) => {
     initPromise = null;
