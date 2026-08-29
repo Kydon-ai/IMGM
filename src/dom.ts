@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   bindCopyActions();
   bindRenameActions();
+  bindSidebarNavigation();
+  bindSettingsPopover();
 
   await window.electron.refresh();
 
@@ -125,6 +127,87 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
+/** 绑定 QQ 风格侧栏导航，点击后滚动到对应功能区域。 */
+function bindSidebarNavigation(): void {
+  const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>(".qq-nav-item"));
+  const appShell = getElementByIdOrThrow<HTMLElement>("app-shell");
+  const pageSections = Array.from(document.querySelectorAll<HTMLElement>(".browser-section[data-page-section]"));
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      const targetId = item.dataset.target;
+      if (!targetId) {
+        return;
+      }
+
+      const isRirPage = targetId === "rir-section";
+      const isAiEntry = targetId === "ai-panel";
+      const pageTargetId = isRirPage ? "rir-section" : "local-section";
+
+      pageSections.forEach((section) => {
+        section.classList.toggle("active", section.id === pageTargetId);
+      });
+      appShell.classList.toggle("rir-mode", isRirPage);
+
+      document.getElementById(isAiEntry ? "ai-panel" : pageTargetId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      navItems.forEach((navItem) => {
+        const isActive = navItem === item;
+        navItem.classList.toggle("active", isActive);
+        if (isActive) {
+          navItem.setAttribute("aria-current", "page");
+        } else {
+          navItem.removeAttribute("aria-current");
+        }
+      });
+    });
+  });
+}
+
+/** 打开或关闭侧栏左下角的设置浮层。 */
+function bindSettingsPopover(): void {
+  const settingsButton = getElementByIdOrThrow<HTMLButtonElement>("settings-button");
+  const settingsPopover = getElementByIdOrThrow<HTMLDivElement>("settings-popover");
+  const closeButton = getElementByIdOrThrow<HTMLButtonElement>("settings-close");
+  const settingsPath = getElementByIdOrThrow<HTMLElement>("settings-path");
+  const consoleToggle = getElementByIdOrThrow<HTMLInputElement>("forward-renderer-console");
+
+  const closePopover = (): void => {
+    settingsPopover.hidden = true;
+    settingsButton.setAttribute("aria-expanded", "false");
+  };
+
+  settingsButton.addEventListener("click", async () => {
+    const willOpen = settingsPopover.hidden;
+    settingsPopover.hidden = !willOpen;
+    settingsButton.setAttribute("aria-expanded", String(willOpen));
+
+    if (willOpen) {
+      const [path, consoleForwardingEnabled] = await Promise.all([
+        window.electron.getData<string>("scanPath"),
+        window.electron.getData<boolean>("forwardRendererConsole"),
+      ]);
+      settingsPath.textContent = path || "未选择";
+      consoleToggle.checked = consoleForwardingEnabled !== false;
+    }
+  });
+
+  closeButton.addEventListener("click", closePopover);
+
+  consoleToggle.addEventListener("change", async () => {
+    const enabled = consoleToggle.checked;
+
+    try {
+      await window.electron.setData("forwardRendererConsole", enabled);
+    } catch (error) {
+      consoleToggle.checked = !enabled;
+      console.error("保存终端日志开关失败:", error);
+    }
+  });
+}
 
 /** 绑定本地和远程图片的复制操作。 */
 function bindCopyActions(): void {

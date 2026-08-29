@@ -6,6 +6,8 @@ import path from "path";
 import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
 
 const store = new Store();
+const FORWARD_RENDERER_CONSOLE_KEY = "forwardRendererConsole";
+let forwardRendererConsole = store.get(FORWARD_RENDERER_CONSOLE_KEY, true);
 
 const platform = getCurrentPlatform();
 const DEFAULTFILEPATH: string[] = [];
@@ -26,18 +28,42 @@ type ModalFilePayload = {
 
 const createWindow = (): void => {
   win = new BrowserWindow({
-    width: 1220,
-    height: 710,
-    minWidth: 1080,
-    minHeight: 710,
+    width: 1403,
+    height: 670,
+    minWidth: 1403,
+    minHeight: 658,
+    frame: true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      // preload.ts 当前需要加载 notyf；Electron 33 默认 sandbox 会阻止该依赖被 require。
+      sandbox: false,
     },
   });
 
+  // 把渲染进程的 console 输出复制到启动 Electron 的终端。
+  win.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+    if (!forwardRendererConsole) {
+      return;
+    }
+
+    const levelName = ["log", "info", "warn", "error"][level] || `level-${level}`;
+    const source = sourceId ? `${path.basename(sourceId)}:${line}` : "renderer";
+    const output = `[${source}][${levelName}] ${message}`;
+
+    if (level >= 3) {
+      console.error(output);
+    } else if (level === 2) {
+      console.warn(output);
+    } else {
+      console.log(output);
+    }
+  });
+
   win.loadFile(path.join(__dirname, "../index.html"));
+  win.setMenuBarVisibility(false);
 
   const sysInfo = (msg: string): void => {
     const notification = new Notification({
@@ -97,6 +123,10 @@ function IPCRegister(currentWin: BrowserWindow): void {
 
   ipcMain.handle("setData", (_event, key: string, data: unknown) => {
     store.set(key, data);
+
+    if (key === FORWARD_RENDERER_CONSOLE_KEY && typeof data === "boolean") {
+      forwardRendererConsole = data;
+    }
   });
 
   ipcMain.handle("showInfo", (_event, message: string) => {

@@ -217,21 +217,311 @@
         }
 
         body {
-            margin: 10px;
+            margin: 0;
+            min-width: 1220px;
+            min-height: 100vh;
             font-family: "Microsoft YaHei", system-ui, sans-serif;
             color: #1f2937;
-            background: #f7f8fa;
+            background: #eef3f8;
+        }
+
+        button,
+        input,
+        textarea {
+            font-family: inherit;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            box-sizing: border-box;
+            gap: 14px;
+            padding: 10px;
+        }
+
+        /* imgm 风格的窄侧栏：保持固定宽度，让主工作区拥有更多空间。 */
+        .imgm-sidebar {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex: 0 0 72px;
+            flex-direction: column;
+            align-items: center;
+            min-height: calc(100vh - 20px);
+            box-sizing: border-box;
+            padding: 15px 9px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 17px;
+            background: linear-gradient(180deg, #176bd1 0%, #2451b8 55%, #332f93 100%);
+            box-shadow: 0 12px 30px rgba(29, 73, 146, 0.22);
+            color: #fff;
+        }
+
+        .imgm-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .imgm-avatar {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            padding: 3px;
+            border: 2px solid rgba(255, 255, 255, 0.88);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 5px 14px rgba(10, 44, 115, 0.24);
+        }
+
+        .imgm-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .imgm-profile-name {
+            max-width: 58px;
+            overflow: hidden;
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 11px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .imgm-nav {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            /* margin-top: 22px; */
+        }
+
+        .imgm-nav-item,
+        .imgm-settings-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            min-height: 58px;
+            padding: 6px 3px;
+            border: 0;
+            border-radius: 13px;
+            color: rgba(255, 255, 255, 0.76);
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .imgm-nav-item:hover,
+        .imgm-settings-button:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .imgm-nav-item.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.19);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 6px 14px rgba(12, 43, 111, 0.16);
+        }
+
+        .imgm-nav-icon {
+            display: grid;
+            place-items: center;
+            width: 31px;
+            height: 31px;
+            margin-bottom: 4px;
+            border-radius: 10px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.14);
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .imgm-nav-label {
+            font-size: 11px;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .imgm-sidebar-divider {
+            width: 42px;
+            height: 1px;
+            margin: 8px 0 10px;
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .imgm-settings-button {
+            min-height: 54px;
+        }
+
+        .settings-popover {
+            position: absolute;
+            bottom: 12px;
+            left: 84px;
+            width: 238px;
+            padding: 14px;
+            border: 1px solid #dce5f5;
+            border-radius: 13px;
+            color: #25324a;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 14px 35px rgba(28, 47, 85, 0.2);
+        }
+
+        .settings-popover[hidden] {
+            display: none;
+        }
+
+        .settings-popover-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .settings-close {
+            width: 25px;
+            height: 25px;
+            border: 0;
+            border-radius: 7px;
+            color: #63708b;
+            background: #f0f4fa;
+            cursor: pointer;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 0;
+            border-top: 1px solid #edf1f7;
+            font-size: 12px;
+        }
+
+        .settings-row strong {
+            max-width: 145px;
+            overflow: hidden;
+            color: #4b6dcc;
+            font-weight: 500;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .settings-toggle-copy {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .settings-toggle-title {
+            color: #25324a;
+            font-weight: 600;
+        }
+
+        .settings-toggle-description {
+            color: #8590a6;
+            font-size: 10px;
+        }
+
+        .settings-switch {
+            position: relative;
+            display: inline-flex;
+            flex: 0 0 auto;
+            width: 38px;
+            height: 22px;
+            cursor: pointer;
+        }
+
+        .settings-switch input {
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .settings-switch-track {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: #cbd4e4;
+            transition: background 0.2s ease;
+        }
+
+        .settings-switch-track::after {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(31, 47, 78, 0.25);
+            content: "";
+            transition: transform 0.2s ease;
+        }
+
+        .settings-switch input:checked + .settings-switch-track {
+            background: #4b6dcc;
+        }
+
+        .settings-switch input:checked + .settings-switch-track::after {
+            transform: translateX(16px);
+        }
+
+        .settings-switch input:focus-visible + .settings-switch-track {
+            outline: 2px solid #91aaf2;
+            outline-offset: 2px;
+        }
+
+        .settings-note {
+            margin: 10px 0 0;
+            color: #8590a6;
+            font-size: 11px;
+            line-height: 1.5;
         }
 
         .app-layout {
+            flex: 1;
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 350px;
+            grid-template-columns: minmax(750px, 1fr) 350px;
             gap: 14px;
             align-items: start;
+            min-width: 0;
+        }
+
+        .browser-section {
+            scroll-margin-top: 18px;
+        }
+
+        .browser-section[data-page-section] {
+            display: none;
+        }
+
+        .browser-section[data-page-section].active {
+            display: block;
+        }
+
+        .app-shell.rir-mode .ai-panel {
+            display: none;
+        }
+
+        .app-shell.rir-mode .app-layout {
+            grid-template-columns: minmax(750px, 1fr);
         }
 
         .image-browser {
-            min-width: 0;
+            min-width: 750px;
         }
 
         .ai-panel {
@@ -420,9 +710,54 @@
 <body>
     <link rel="stylesheet" href="node_modules/notyf/notyf.min.css">
 
+    <div id="app-shell" class="app-shell">
+    <aside class="imgm-sidebar" aria-label="主导航">
+        <nav class="imgm-nav" aria-label="功能导航">
+            <button class="imgm-nav-item active" type="button" data-target="local-section" aria-controls="local-section" aria-current="page">
+                <span class="imgm-nav-icon" aria-hidden="true">▦</span>
+                <span class="imgm-nav-label">图片库</span>
+            </button>
+            <button class="imgm-nav-item" type="button" data-target="rir-section" aria-controls="rir-section">
+                <span class="imgm-nav-icon" aria-hidden="true">↗</span>
+                <span class="imgm-nav-label">远程 RIR</span>
+            </button>
+            <button class="imgm-nav-item" type="button" data-target="ai-panel" aria-controls="ai-panel">
+                <span class="imgm-nav-icon" aria-hidden="true">✦</span>
+                <span class="imgm-nav-label">AI 助手</span>
+            </button>
+        </nav>
+        <div class="imgm-sidebar-divider"></div>
+        <button id="settings-button" class="imgm-settings-button" type="button" aria-expanded="false" aria-controls="settings-popover">
+            <span class="imgm-nav-icon" aria-hidden="true">⚙</span>
+            <span class="imgm-nav-label">设置</span>
+        </button>
+        <div id="settings-popover" class="settings-popover" hidden>
+            <div class="settings-popover-header">
+                <span>设置</span>
+                <button id="settings-close" class="settings-close" type="button" aria-label="关闭设置">×</button>
+            </div>
+            <div class="settings-row">
+                <span>当前图片目录</span>
+                <strong id="settings-path">未选择</strong>
+            </div>
+            <div class="settings-row">
+                <div class="settings-toggle-copy">
+                    <span class="settings-toggle-title">终端日志转发</span>
+                    <span class="settings-toggle-description">复制渲染进程的 console 输出</span>
+                </div>
+                <label class="settings-switch" aria-label="开关终端日志转发">
+                    <input id="forward-renderer-console" type="checkbox" checked>
+                    <span class="settings-switch-track" aria-hidden="true"></span>
+                </label>
+            </div>
+            <p class="settings-note">更多界面和检索选项将在这里集中管理。</p>
+        </div>
+    </aside>
+
     <div class="app-layout">
     <main class="image-browser">
 
+    <section id="local-section" class="browser-section active" data-page-section>
     <p>请选择扫描文件夹路径：<span id="file-path" class="url-style"></span></p>
     
     <!-- 工具栏 -->
@@ -458,7 +793,10 @@
                 </button>
             </div>
         </div>
-    </div>
+	</div>
+	</section>
+
+	<section id="rir-section" class="browser-section" data-page-section>
 	<p>当前RIR图片解析路径：<span id="rir-file-path" class="url-style">暂未获取到RIR解析路径...</span></p>
 	<div class="toolbar" >
 		<div class="toolbar-left">
@@ -482,6 +820,7 @@
         </div>
 		
 	</div>
+	</section>
     <!-- 图片展示区域 -->
     <div class="image-container">
         <div class="grid-img">
@@ -536,10 +875,10 @@
     </div>
 
     </main>
-    <aside class="ai-panel" aria-label="AI 图片问答">
+    <aside class="ai-panel" id="ai-panel" aria-label="AI 图片问答">
         <header class="ai-panel-header">
             <h2>AI 图片助手</h2>
-            <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p>
+            <!-- <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p> -->
         </header>
         <div id="ai-messages" class="ai-messages" aria-live="polite">
             <div class="ai-message assistant">告诉我你想找什么图片。例如：“找 8 张透明背景的咖波表情包”。</div>
@@ -561,6 +900,7 @@
             <button id="ai-send" class="ai-send" type="submit">发送</button>
         </form>
     </aside>
+    </div>
     </div>
 
     <script src="./dist/dom.js"></script>
