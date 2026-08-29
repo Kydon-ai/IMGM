@@ -12,5 +12,9 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
     assert.equal(matches.length, 1, `${id} 应只出现一次`);
   }
   assert.match(html, /<aside class="ai-panel"/);
+  assert.match(html, /<p id="ai-status" class="ai-status">/);
   assert.match(html, /<script src="\.\/dist\/ai-chat\.js"><\/script>/);
+
+  const domSource = fs.readFileSync(path.resolve(process.cwd(), "src/dom.ts"), "utf8");
+  assert.match(domSource, /querySelectorAll<HTMLButtonElement>\("\.imgm-nav-item"\)/);
 });

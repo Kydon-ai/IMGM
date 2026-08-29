@@ -45,6 +45,10 @@ const createWindow = (): void => {
 
   // 把渲染进程的 console 输出复制到启动 Electron 的终端。
   win.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+    if (sourceId.startsWith("devtools://")) {
+      return;
+    }
+
     if (!forwardRendererConsole) {
       return;
     }

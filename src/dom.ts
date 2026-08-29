@@ -1,10 +1,6 @@
 const PAGE_SIZE = 8;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  for (const name in window.electron) {
-    console.log("打印：", name, window.electron[name as keyof typeof window.electron]);
-  }
-
   window.electron.ipcRenderer.on("modalData", () => {
     window.electron.refresh();
   });
@@ -130,7 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /** 绑定 QQ 风格侧栏导航，点击后滚动到对应功能区域。 */
 function bindSidebarNavigation(): void {
-  const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>(".qq-nav-item"));
+  const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>(".imgm-nav-item"));
   const appShell = getElementByIdOrThrow<HTMLElement>("app-shell");
   const pageSections = Array.from(document.querySelectorAll<HTMLElement>(".browser-section[data-page-section]"));
 

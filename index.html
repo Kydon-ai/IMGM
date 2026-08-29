@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file: https:; connect-src 'self' https:; font-src 'self' data:;" />
     <title>图片检索工具</title>
     <style>
         /* 工具栏样式 */
@@ -878,7 +879,7 @@
     <aside class="ai-panel" id="ai-panel" aria-label="AI 图片问答">
         <header class="ai-panel-header">
             <h2>AI 图片助手</h2>
-            <!-- <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p> -->
+            <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p>
         </header>
         <div id="ai-messages" class="ai-messages" aria-live="polite">
             <div class="ai-message assistant">告诉我你想找什么图片。例如：“找 8 张透明背景的咖波表情包”。</div>
