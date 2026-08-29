@@ -34,6 +34,7 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "dataset:prepare": "npm run build && node dist/cli/prepare-dataset.js",
+    "images:import": "npm run build && node dist/cli/import-images-to-db.js",
     "eval:retrieval": "npm run build && node dist/cli/evaluate-retrieval.js",
     "mcp:build": "npm run build",
     "mcp": "node dist/mcp/server.js",
