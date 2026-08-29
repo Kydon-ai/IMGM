@@ -191,7 +191,9 @@ export class SqliteImageStore {
       return [];
     }
 
-    const [queryVector, keywords] = await Promise.all([embedText(query), segmentQuery(query)]);
+    // Electron 主进程中不能同时初始化两个 ONNX 模型，否则可能触发 native 崩溃并直接关闭窗口。
+    const queryVector = await embedText(query);
+    const keywords = await segmentQuery(query);
     const prepared = rows.map((row): PreparedSearchItem => {
       const imageVector = bufferToVector(row.image_embedding);
       const nameVector = bufferToVector(row.name_embedding);
