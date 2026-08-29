@@ -6,9 +6,8 @@ export type AiConfig = {
   deepseekApiKey: string;
   deepseekModel: string;
   deepseekBaseUrl: string;
-  milvusAddress: string;
-  milvusCollection: string;
   datasetPath: string;
+  imageDbPath: string;
 };
 
 let envLoaded = false;
@@ -25,16 +24,15 @@ function loadEnvironment(): void {
   }
 }
 
-/** 读取 AI、Milvus 与数据集运行配置。 */
+/** 读取 AI、SQLite 与数据集运行配置。 */
 export function getAiConfig(): AiConfig {
   loadEnvironment();
   return {
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || "",
     deepseekModel: process.env.DEEPSEEK_MODEL_NAME || "deepseek-chat",
     deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/$/, ""),
-    milvusAddress: process.env.MILVUS_ADDRESS || "localhost:19530",
-    milvusCollection: process.env.MILVUS_COLLECTION || "imgm_images_v1",
     datasetPath: path.resolve(process.env.IMAGE_DATASET_PATH || path.join("data", "dataset", "images.jsonl")),
+    imageDbPath: path.resolve(process.env.IMAGE_DB_PATH || path.join("data", "app.db")),
   };
 }
 

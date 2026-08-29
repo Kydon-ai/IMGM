@@ -1,28 +1,27 @@
 import { ipcMain } from "electron";
 import { assertDeepSeekConfigured, getAiConfig } from "./config";
 import { DeepSeekClient } from "./deepseek-client";
-import { MilvusImageStore } from "./milvus-image-store";
-import { ImageRagService } from "./rag-workflow";
-import { AiChatEvent, AiChatRequest } from "./types";
+import { SqliteImageStore } from "./sqlite-image-store";
+import { ImageRagService, ImageRetriever } from "./rag-workflow";
+import { AiChatEvent, AiChatRequest, ImageSearchHit } from "./types";
 
 type AiRuntime = {
   service: ImageRagService;
-  store: MilvusImageStore;
+  store: SqliteImageStore;
 };
 
 let runtimePromise: Promise<AiRuntime> | null = null;
 
-/** 延迟初始化 DeepSeek、Milvus 和 LangGraph 运行时。 */
+/** 延迟初始化 DeepSeek、SQLite 和 LangGraph 运行时。 */
 async function createRuntime(): Promise<AiRuntime> {
   const config = getAiConfig();
   assertDeepSeekConfigured(config);
-  const store = new MilvusImageStore({ address: config.milvusAddress, collectionName: config.milvusCollection });
-  if (!(await store.isHealthy())) {
-    await store.close();
-    throw new Error(`Milvus 未就绪，请先运行 npm run milvus:start：${config.milvusAddress}`);
-  }
+  const store = new SqliteImageStore({ databasePath: config.imageDbPath });
   const model = new DeepSeekClient(config);
-  return { service: new ImageRagService(model, store), store };
+  const retriever: ImageRetriever = {
+    search: async (intent, limit): Promise<ImageSearchHit[]> => store.search(intent.query, limit),
+  };
+  return { service: new ImageRagService(model, retriever), store };
 }
 
 /** 获取可复用的 AI 运行时，失败后允许下一次请求重试。 */
@@ -69,7 +68,7 @@ export function registerAiIpc(): void {
   });
 }
 
-/** 在应用退出时关闭 Milvus 连接。 */
+/** 在应用退出时关闭 SQLite 连接。 */
 export async function closeAiRuntime(): Promise<void> {
   if (!runtimePromise) {
     return;

@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.12",
-    "@zilliz/milvus2-sdk-node": "^3.0.4",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^16.6.1",
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^8.1.0",
@@ -28,25 +30,19 @@
     "typescript": "^6.0.3"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "dataset:prepare": "npm run build && node dist/cli/prepare-dataset.js",
-    "dataset:index": "npm run build && node dist/cli/index-dataset.js",
     "eval:retrieval": "npm run build && node dist/cli/evaluate-retrieval.js",
-    "milvus:start": "docker compose -f docker-compose.milvus.yml up -d",
-    "milvus:stop": "docker compose -f docker-compose.milvus.yml stop",
-    "milvus:status": "docker compose -f docker-compose.milvus.yml ps",
+    "mcp:build": "npm run build",
+    "mcp": "node dist/mcp/server.js",
     "start": "npm run build && electron-forge start",
     "package": "npm run build && electron-forge package",
     "make": "npm run build && electron-forge make",
     "bingo": "npx electron-forge import && npm run make"
   },
   "author": "LiuQidong",
-  "overrides": {
-    "thrift": {
-      "uuid": "11.1.0"
-    }
-  },
   "license": "ISC",
   "description": "图片读取工具"
 }

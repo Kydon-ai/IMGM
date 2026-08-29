@@ -16,7 +16,7 @@ module.exports = {
       /^\/infrastructure(?:\/|$)/,
       /^\/src(?:\/|$)/,
       /^\/dist\/tests(?:\/|$)/,
-      /^\/(?:docker-compose\.milvus\.yml|README\.md|test\.html|test\.json|tsconfig\.json)$/,
+      /^\/(?:README\.md|test\.html|test\.json|tsconfig\.json)$/,
     ],
   },
   rebuildConfig: {},

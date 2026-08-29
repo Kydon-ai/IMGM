@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     input.disabled = busy;
   }
 
-  /** 渲染 Milvus 返回的最多八张图片。 */
+  /** 渲染 SQLite 返回的最多八张图片。 */
   function renderResults(images: ChatSearchHit[]): void {
     currentImages = images;
     results.replaceChildren();
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!assistantBubble) {
         assistantBubble = appendMessage("assistant", `请求失败：${detail}`);
       }
-      status.textContent = "请求失败，请检查 DeepSeek 与 Milvus 配置";
+      status.textContent = "请求失败，请检查 DeepSeek 与 SQLite 配置";
     } finally {
       setBusy(false);
       input.focus();

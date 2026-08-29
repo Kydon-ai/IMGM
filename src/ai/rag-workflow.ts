@@ -108,7 +108,7 @@ export function createImageRagWorkflow(model: RagChatModel, retriever: ImageRetr
     if (!state.intent.shouldSearch) {
       return { images: [] };
     }
-    state.emit({ requestId: state.request.requestId, type: "status", message: "正在 Milvus 中检索图片…" });
+    state.emit({ requestId: state.request.requestId, type: "status", message: "正在 SQLite 中检索图片…" });
     const images = await retriever.search(state.intent, 8);
     state.emit({ requestId: state.request.requestId, type: "images", images });
     return { images };

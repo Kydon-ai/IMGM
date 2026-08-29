@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { CATEGORY_KNOWLEDGE, detectCategory, getCategoryFamily } from "./category-knowledge";
-import { MilvusImageStore } from "./milvus-image-store";
+import { SqliteImageStore } from "./sqlite-image-store";
 import { DatasetSummary, ImageMetadata, SearchIntent } from "./types";
 
 export type CategoryEvaluation = {
@@ -43,9 +43,9 @@ function isRelevant(expectedCategory: string, actualCategory: string): boolean {
   return getCategoryFamily(expectedCategory).includes(actualCategory);
 }
 
-/** 在训练集索引上评估测试集类别查询的 Precision@8。 */
+/** 在 SQLite 图片索引上评估测试集类别查询的 Precision@8。 */
 export async function evaluateRetrieval(
-  store: MilvusImageStore,
+  store: SqliteImageStore,
   items: ImageMetadata[],
   target = 0.95
 ): Promise<RetrievalEvaluation> {
@@ -75,7 +75,7 @@ export async function evaluateRetrieval(
     let returned = 0;
     for (const query of queries) {
       const intent: SearchIntent = { shouldSearch: true, query, category: detectCategory(query) || category };
-      const hits = await store.search(intent, 8, "train");
+      const hits = await store.search(intent.query, 8);
       relevant += hits.filter((hit) => isRelevant(category, hit.category)).length;
       returned += hits.length;
     }

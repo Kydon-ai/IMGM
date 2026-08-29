@@ -85,7 +85,7 @@ function rgbToHex(red: number, green: number, blue: number): string {
   return `#${[red, green, blue].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** 根据相对路径生成稳定且可作为 Milvus 主键的 ID。 */
+/** 根据相对路径生成稳定且可作为 SQLite 记录主键的 ID。 */
 export function createImageId(relativePath: string): string {
   return crypto.createHash("sha256").update(relativePath.replace(/\\/g, "/").toLowerCase()).digest("hex");
 }

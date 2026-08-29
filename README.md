@@ -186,14 +186,14 @@ if __name__ == "__main__":
 
 # 6.AI 图片 RAG 检索
 
-项目右侧新增 AI 图片助手。用户可以连续聊天，LangGraph 会依次解析检索意图、从 Milvus 取回 Top-8 图片，再由 DeepSeek 结合结果流式回答。
+项目右侧新增 AI 图片助手。用户可以连续聊天，LangGraph 会依次解析检索意图、从 SQLite 取回 Top-8 图片，再由 DeepSeek 结合结果流式回答。
 
 ```mermaid
 flowchart LR
     A[本地图片目录] --> B[尺寸/透明度/动图/主色元数据]
     B --> C[分层训练集与测试集]
     C --> D[LangChain Document 与向量]
-    D --> E[(Milvus)]
+    D --> E[(SQLite)]
     F[用户对话] --> G[LangGraph 意图解析]
     G --> E
     E --> H[Top-8 图片]
@@ -202,15 +202,9 @@ flowchart LR
 
 ## 6.1 环境准备
 
-1. 安装并启动 Docker Desktop。
+1. 安装 Node.js 22 或更高版本。
 2. 复制 `.env.example` 为 `.env`，填写 `DEEPSEEK_API_KEY`；不要提交真实密钥。
-3. 启动 Milvus：
-
-```bash
-npm run milvus:start
-```
-
-默认连接 `localhost:19530`，集合名为 `imgm_images_v1`。可在 `.env` 中通过 `MILVUS_ADDRESS` 和 `MILVUS_COLLECTION` 覆盖。
+3. 设置 `IMAGE_DB_PATH`，指向参考项目的 `data/app.db`。
 
 发布版不会把 `.env` 打进 ASAR。使用打包后的程序时，请把配置好的 `.env` 放在 `imgm.exe` 同目录；密钥始终保持为外置文件。
 
@@ -225,11 +219,10 @@ npm run dataset:prepare
 # 自定义目录
 npm run dataset:prepare -- "D:\Pictures" "data\dataset"
 
-# 重建 Milvus 集合并写入全量数据
-npm run dataset:index
+# SQLite 数据库由参考项目维护，直接通过 IMAGE_DB_PATH 读取
 ```
 
-元数据包含目录类别、人工核验语义标签、文件名、格式、尺寸、横竖构图、动图、透明背景、主色与训练/测试标记。生成文件位于 `data/dataset`，Milvus 持久化数据位于 `data/milvus`，二者均不进入 Git。
+元数据包含目录类别、人工核验语义标签、文件名、格式、尺寸、横竖构图、动图、透明背景、主色与训练/测试标记。生成文件位于 `data/dataset`，SQLite 数据库路径由 `IMAGE_DB_PATH` 指定，不进入 Git。
 
 ## 6.3 检索评测
 
@@ -244,12 +237,37 @@ npm run eval:retrieval
 | 命令 | 作用 |
 | --- | --- |
 | `npm test` | 构建并运行单元测试 |
-| `npm run milvus:status` | 查看 Milvus 健康状态 |
-| `npm run milvus:stop` | 停止 Milvus，保留数据 |
 | `npm run dataset:prepare` | 提取图片元数据并分层切分 |
-| `npm run dataset:index` | 重建并填充 Milvus 图片集合 |
 | `npm run eval:retrieval` | 计算并输出 Precision@8 |
 | `npm start` | 启动 Electron 应用 |
+
+## 6.5 MCP 图片检索服务
+
+项目同时提供一个基于 stdio 的 MCP Server，将参考项目中的 `better-sqlite3` 图片检索能力暴露给 Claude Desktop、Cursor 或其他 MCP 客户端。MCP 服务使用 SQLite 中保存的 CLIP 文本/图片向量，结合中文关键词进行混合排序，独立于 DeepSeek 和外部向量数据库。
+
+先将参考项目的数据库路径配置到 `.env`，再构建并启动 MCP：
+
+```bash
+IMAGE_DB_PATH=D:/trae/project/IMAGE-SEARCH-TEST/data/app.db
+npm run mcp:build
+npm run mcp
+```
+
+MCP 客户端配置示例（将路径替换为本项目的绝对路径）：
+
+```json
+{
+  "mcpServers": {
+    "imgm-image-search": {
+      "command": "node",
+      "args": ["D:\\electron-fiddle\\IMGM\\0829\\IMGM\\dist\\mcp\\server.js"],
+      "cwd": "D:\\electron-fiddle\\IMGM\\0829\\IMGM"
+    }
+  }
+}
+```
+
+服务提供 `search_images` 工具，参数包括 `query`、`limit` 和 `category`。返回结果包含 `filePath`、`fileName`、类别、标签、描述、`file://` 地址、混合分数以及各分项分数。默认数据库路径为 `./data/app.db`，也可以通过 `IMAGE_DB_PATH` 指向参考项目的 `data/app.db`。首次执行检索时会按需下载 CLIP 文本模型和中文分词模型。
 
 # 参考资料📚
 
