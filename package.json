@@ -32,7 +32,7 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "rebuild:electron": "electron-rebuild -w better-sqlite3",
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
     "rebuild:node": "npm rebuild better-sqlite3",
     "test": "npm run rebuild:node && npm run build && node --test dist/tests/*.test.js",
     "dataset:prepare": "npm run build && node dist/cli/prepare-dataset.js",
@@ -41,7 +41,7 @@
     "eval:retrieval": "npm run build && node dist/cli/evaluate-retrieval.js",
     "mcp:build": "npm run build",
     "mcp": "node dist/mcp/server.js",
-    "start": "npm run build && electron-forge start",
+    "start": "npm run build && node scripts/ensure-electron-native.cjs && electron-forge start",
     "package": "npm run build && electron-forge package",
     "make": "npm run build && electron-forge make",
     "bingo": "npx electron-forge import && npm run make"
