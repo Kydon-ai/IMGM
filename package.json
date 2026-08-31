@@ -41,7 +41,7 @@
     "eval:retrieval": "npm run build && node dist/cli/evaluate-retrieval.js",
     "mcp:build": "npm run build",
     "mcp": "node dist/mcp/server.js",
-    "start": "npm run build && npm run rebuild:electron && electron-forge start",
+    "start": "npm run build && electron-forge start",
     "package": "npm run build && electron-forge package",
     "make": "npm run build && electron-forge make",
     "bingo": "npx electron-forge import && npm run make"
