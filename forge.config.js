@@ -1,5 +1,6 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { ignore } = require('./forge-packager-config');
 
 module.exports = {
   packagerConfig: {
@@ -8,16 +9,7 @@ module.exports = {
     icon: './public/icon', // 图标路径
     executableName: 'imgm', // 强制指定可执行文件名称（所有平台）
     // 排除开发数据、密钥、源码和测试，避免泄密并控制安装包体积。
-    ignore: [
-      /^\/\.env(?:\.example)?$/,
-      /^\/data(?:\/|$)/,
-      /^\/development_task(?:\/|$)/,
-      /^\/artifacts(?:\/|$)/,
-      /^\/infrastructure(?:\/|$)/,
-      /^\/src(?:\/|$)/,
-      /^\/dist\/tests(?:\/|$)/,
-      /^\/(?:README\.md|test\.html|test\.json|tsconfig\.json)$/,
-    ],
+    ignore,
   },
   rebuildConfig: {},
   makers: [

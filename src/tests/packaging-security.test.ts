@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const forgeConfig = require("../../forge.config.js") as { packagerConfig: { ignore: RegExp[] } };
+const packagerConfig = require("../../forge-packager-config.js") as { ignore: RegExp[] };
 
 /** 判断打包忽略规则是否命中指定相对路径。 */
 function isIgnored(filePath: string): boolean {
-  return forgeConfig.packagerConfig.ignore.some((pattern) => pattern.test(filePath));
+  return packagerConfig.ignore.some((pattern) => pattern.test(filePath));
 }
 
 test("打包时应排除密钥和本地 SQLite 数据", () => {
