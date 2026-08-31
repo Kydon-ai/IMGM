@@ -5,6 +5,19 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file: https:; connect-src 'self' https:; font-src 'self' data:;" />
     <title>图片检索工具</title>
     <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         /* 工具栏样式 */
         .toolbar {
             display: flex;
@@ -220,7 +233,7 @@
         body {
             margin: 0;
             min-width: 1220px;
-            min-height: 100vh;
+            min-height: 0;
             font-family: "Microsoft YaHei", system-ui, sans-serif;
             color: #1f2937;
             background: #eef3f8;
@@ -234,10 +247,13 @@
 
         .app-shell {
             display: flex;
-            min-height: 100vh;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
             box-sizing: border-box;
             gap: 14px;
             padding: 10px;
+            overflow: hidden;
         }
 
         /* imgm 风格的窄侧栏：保持固定宽度，让主工作区拥有更多空间。 */
@@ -248,7 +264,8 @@
             flex: 0 0 72px;
             flex-direction: column;
             align-items: center;
-            min-height: calc(100vh - 20px);
+            height: 100%;
+            min-height: 0;
             box-sizing: border-box;
             padding: 15px 9px 12px;
             border: 1px solid rgba(255, 255, 255, 0.22);
@@ -496,9 +513,13 @@
             flex: 1;
             display: grid;
             grid-template-columns: minmax(750px, 1fr) 350px;
+            grid-template-rows: minmax(0, 1fr);
             gap: 14px;
-            align-items: start;
+            align-items: stretch;
+            height: 100%;
             min-width: 0;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .browser-section {
@@ -523,6 +544,9 @@
 
         .image-browser {
             min-width: 750px;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .ai-panel {
@@ -530,8 +554,8 @@
             top: 10px;
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 20px);
-            min-height: 620px;
+            height: 100%;
+            min-height: 0;
             overflow: hidden;
             border: 1px solid #dde3ec;
             border-radius: 12px;
