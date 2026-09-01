@@ -29,7 +29,7 @@ type ModalFilePayload = {
 const createWindow = (): void => {
   win = new BrowserWindow({
     width: 1403,
-    height: 670,
+    height: 658,
     minWidth: 1403,
     minHeight: 658,
     frame: true,
