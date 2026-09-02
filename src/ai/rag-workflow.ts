@@ -1,6 +1,6 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
-import { CATEGORY_KNOWLEDGE, detectCategory } from "./category-knowledge";
+import { CATEGORY_KNOWLEDGE } from "./category-knowledge";
 import { DeepSeekMessage, RagChatModel } from "./deepseek-client";
 import { AiChatEvent, AiChatRequest, AiChatResponse, ImageSearchHit, SearchIntent } from "./types";
 
@@ -12,12 +12,14 @@ type EventEmitter = (event: AiChatEvent) => void;
 
 const SearchIntentSchema = z.object({
   shouldSearch: z.boolean().optional(),
-  query: z.string().optional(),
-  category: z.string().optional(),
-  color: z.string().optional(),
+  query: z.string().trim().min(1).optional().nullable(),
+  category: z.string().trim().min(1).optional().nullable(),
+  color: z.string().trim().min(1).optional().nullable(),
   animated: z.boolean().optional(),
   transparent: z.boolean().optional(),
 });
+
+const COLOR_OPTIONS = ["黑色", "白色", "灰色", "红色", "橙色", "黄色", "绿色", "青色", "蓝色", "紫色", "粉色", "棕色"];
 
 const RagState = Annotation.Root({
   request: Annotation<AiChatRequest>(),
@@ -27,37 +29,41 @@ const RagState = Annotation.Root({
   emit: Annotation<EventEmitter>(),
 });
 
-/** 从用户原始文本中提取无需模型即可识别的搜索条件。 */
+/** LLM 解析失败时只保留原始查询，不再使用本地关键词猜类别或颜色。 */
 export function buildFallbackIntent(message: string): SearchIntent {
-  const normalized = message.normalize("NFKC").toLowerCase();
-  const color = ["黑色", "白色", "灰色", "红色", "橙色", "黄色", "绿色", "青色", "蓝色", "紫色", "粉色", "棕色"].find(
-    (item) => normalized.includes(item)
-  );
-  const category = detectCategory(message);
-  const hasSearchVerb = /找|搜索|检索|图片|头像|表情|素材|图标|看看/.test(message);
-  return {
-    shouldSearch: Boolean(category || color || hasSearchVerb),
+  const result: SearchIntent = {
+    shouldSearch: false,
     query: message,
-    ...(category ? { category } : {}),
-    ...(color ? { color } : {}),
-    ...(/动图|gif/.test(normalized) ? { animated: true } : {}),
-    ...(/静态图|不要动图/.test(normalized) ? { animated: false } : {}),
-    ...(/透明|免抠/.test(normalized) ? { transparent: true } : {}),
   };
+
+  return result;
 }
 
-/** 合并模型意图与本地规则，并丢弃不存在的类别。 */
+function findExactOption(value: string | null | undefined, options: readonly string[]): string | undefined {
+  const normalized = value?.normalize("NFKC").trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  return options.find((option) => option.normalize("NFKC").toLowerCase() === normalized);
+}
+
+/** 校验 LLM 意图，并只允许下游使用受控的类别和颜色值。 */
 function normalizeIntent(message: string, modelIntent: unknown): SearchIntent {
-  const fallback = buildFallbackIntent(message);
   const parsed = SearchIntentSchema.safeParse(modelIntent);
   if (!parsed.success) {
-    return fallback;
+    return buildFallbackIntent(message);
   }
-  const candidate = { ...fallback, ...parsed.data, query: parsed.data.query || message };
-  if (candidate.category && !CATEGORY_KNOWLEDGE[candidate.category]) {
-    candidate.category = fallback.category;
-  }
-  return candidate as SearchIntent;
+
+  const category = findExactOption(parsed.data.category, Object.keys(CATEGORY_KNOWLEDGE));
+  const color = findExactOption(parsed.data.color, COLOR_OPTIONS);
+  return {
+    shouldSearch: parsed.data.shouldSearch ?? false,
+    query: parsed.data.query || message,
+    ...(category ? { category } : {}),
+    ...(color ? { color } : {}),
+    ...(typeof parsed.data.animated === "boolean" ? { animated: parsed.data.animated } : {}),
+    ...(typeof parsed.data.transparent === "boolean" ? { transparent: parsed.data.transparent } : {}),
+  };
 }
 
 /** 构建检索意图解析提示词。 */
@@ -66,9 +72,11 @@ function buildIntentMessages(message: string): DeepSeekMessage[] {
     {
       role: "system",
       content:
-        "你是图片检索意图解析器。只输出 JSON，字段为 shouldSearch、query、category、color、animated、transparent。" +
-        ` category 只能取以下值之一或省略：${Object.keys(CATEGORY_KNOWLEDGE).join("、")}。` +
-        "用户如果只是闲聊，shouldSearch=false；如果想找图片、头像、表情包或素材，则为 true。",
+        "你是图片检索意图解析器。必须只输出一个 JSON 对象，不要输出 Markdown、解释或对象之外的内容。" +
+        'JSON 字段必须为 shouldSearch、query、category、color、animated、transparent；没有对应条件时使用 null。' +
+        ` category 只能取以下值之一或 null：${Object.keys(CATEGORY_KNOWLEDGE).join("、")}。` +
+        ` color 只能取以下值之一或 null：${COLOR_OPTIONS.join("、")}。` +
+        "query 应保留用户真正想搜索的视觉描述；用户只是闲聊时 shouldSearch=false，否则为 true。",
     },
     { role: "user", content: message },
   ];

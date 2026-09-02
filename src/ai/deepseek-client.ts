@@ -31,6 +31,56 @@ export function stripJsonFence(content: string): string {
   return content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 }
 
+/** 从模型返回的文本中提取第一个完整的 JSON 对象。 */
+export function extractJsonObject(content: string): string {
+  const source = stripJsonFence(content);
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+
+    if (start === -1) {
+      if (character === "{") {
+        start = index;
+        depth = 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 1);
+      }
+    }
+  }
+
+  throw new Error("DeepSeek 返回内容中没有完整的 JSON 对象");
+}
+
+/** 提取并解析模型返回的 JSON 对象，兼容对象前后的解释文本。 */
+export function parseJsonObject<T>(content: string): T {
+  return JSON.parse(extractJsonObject(content)) as T;
+}
+
 export class DeepSeekClient implements RagChatModel {
   constructor(private readonly config: AiConfig) {}
 
@@ -47,7 +97,7 @@ export class DeepSeekClient implements RagChatModel {
     if (!content) {
       throw new Error("DeepSeek 未返回可解析内容");
     }
-    return JSON.parse(stripJsonFence(content)) as T;
+    return parseJsonObject<T>(content);
   }
 
   /** 通过 SSE 流式读取 DeepSeek 回答。 */

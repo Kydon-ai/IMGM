@@ -19,7 +19,8 @@ async function createRuntime(): Promise<AiRuntime> {
   const store = new SqliteImageStore({ databasePath: config.imageDbPath });
   const model = new DeepSeekClient(config);
   const retriever: ImageRetriever = {
-    search: async (intent, limit): Promise<ImageSearchHit[]> => store.search(intent.query, limit),
+    search: async (intent, limit): Promise<ImageSearchHit[]> =>
+      store.search(intent.query, limit, intent.category, intent.color),
   };
   return { service: new ImageRagService(model, retriever), store };
 }

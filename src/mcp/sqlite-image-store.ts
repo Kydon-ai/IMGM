@@ -216,15 +216,16 @@ export class SqliteImageStore {
     return Number(row.count);
   }
 
-  async search(query: string, topK = 8, category?: string): Promise<SqliteImageSearchHit[]> {
+  async search(query: string, topK = 8, category?: string, color?: string): Promise<SqliteImageSearchHit[]> {
     const rows = this.loadRows(category);
     if (rows.length === 0) {
       return [];
     }
 
     // Electron 主进程中不能同时初始化两个 ONNX 模型，否则可能触发 native 崩溃并直接关闭窗口。
-    const queryVector = await embedText(query);
-    const keywords = await segmentQuery(query);
+    const retrievalQuery = [query.trim(), color?.trim()].filter(Boolean).join(" ");
+    const queryVector = await embedText(retrievalQuery);
+    const keywords = await segmentQuery(retrievalQuery);
     const prepared = rows.map((row): PreparedSearchItem => {
       const imageVector = bufferToVector(row.image_embedding);
       const nameVector = bufferToVector(row.name_embedding);

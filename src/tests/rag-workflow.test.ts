@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DeepSeekMessage, RagChatModel } from "../ai/deepseek-client";
-import { ImageRetriever, ImageRagService } from "../ai/rag-workflow";
+import { buildFallbackIntent, ImageRetriever, ImageRagService } from "../ai/rag-workflow";
 import { ImageSearchHit, SearchIntent } from "../ai/types";
 
 class FakeModel implements RagChatModel {
   /** 返回固定检索意图。 */
   async completeJson<T>(): Promise<T> {
-    return { shouldSearch: true, query: "咖波", category: "capoos" } as T;
+    return { shouldSearch: true, query: "可爱的蓝色猫咪", category: "capoos", color: "蓝色" } as T;
   }
 
   /** 模拟两段流式回答。 */
@@ -49,7 +49,16 @@ test("LangGraph 工作流应先检索再流式回答", async () => {
   );
 
   assert.equal(retriever.lastIntent?.category, "capoos");
+  assert.equal(retriever.lastIntent?.color, "蓝色");
+  assert.equal(retriever.lastIntent?.query, "可爱的蓝色猫咪");
   assert.equal(result.answer, "找到了");
   assert.equal(result.images.length, 1);
   assert.deepEqual(events, ["status", "status", "images", "status", "chunk", "chunk"]);
+});
+
+test("LLM 意图解析失败时不再用本地关键词猜类别和颜色", () => {
+  assert.deepEqual(buildFallbackIntent("找蓝色咖波"), {
+    shouldSearch: false,
+    query: "找蓝色咖波",
+  });
 });
