@@ -21,21 +21,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendButton = getAiElement<HTMLButtonElement>("ai-send");
   const status = getAiElement<HTMLElement>("ai-status");
   const messages = getAiElement<HTMLElement>("ai-messages");
+  const resultsSection = getAiElement<HTMLElement>("ai-results-section");
   const results = getAiElement<HTMLElement>("ai-results");
   const resultsCount = getAiElement<HTMLElement>("ai-results-count");
   const showGallery = getAiElement<HTMLButtonElement>("ai-show-gallery");
+  const resultsClose = getAiElement<HTMLButtonElement>("ai-results-close");
   const history: ChatMessage[] = [];
   const threadId = crypto.randomUUID();
   let activeRequestId = "";
   let assistantBubble: HTMLElement | null = null;
   let currentImages: ChatSearchHit[] = [];
+  let resultsHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  resultsSection.hidden = true;
 
   /** 添加一条聊天气泡并滚动到底部。 */
   function appendMessage(role: ChatRole, content: string): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = `ai-message-wrap ${role}`;
     const element = document.createElement("div");
     element.className = `ai-message ${role}`;
     element.textContent = content;
-    messages.appendChild(element);
+    wrapper.appendChild(element);
+    messages.appendChild(wrapper);
     messages.scrollTop = messages.scrollHeight;
     return element;
   }
@@ -47,11 +55,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /** 渲染 SQLite 返回的最多八张图片。 */
-  function renderResults(images: ChatSearchHit[]): void {
+  function renderResults(images: ChatSearchHit[], reveal = true): void {
+    if (resultsHideTimer) {
+      clearTimeout(resultsHideTimer);
+      resultsHideTimer = null;
+    }
     currentImages = images;
     results.replaceChildren();
     resultsCount.textContent = `检索结果 · ${images.length} 张`;
     showGallery.disabled = images.length === 0;
+
+    if (images.length === 0) {
+      resultsSection.hidden = true;
+      return;
+    }
 
     for (const item of images) {
       const card = document.createElement("button");
@@ -71,6 +88,27 @@ document.addEventListener("DOMContentLoaded", () => {
       card.append(image, label);
       results.appendChild(card);
     }
+
+    if (reveal) {
+      resultsSection.hidden = false;
+      resultsHideTimer = setTimeout(() => {
+        resultsSection.hidden = true;
+        resultsHideTimer = null;
+      }, 5000);
+    }
+  }
+
+  /** 在对应的 AI 回复下保留本次检索结果的回放入口。 */
+  function addReplayButton(bubble: HTMLElement, images: ChatSearchHit[]): void {
+    if (!images.length || !bubble.parentElement) {
+      return;
+    }
+    const replay = document.createElement("button");
+    replay.type = "button";
+    replay.className = "ai-replay-search";
+    replay.textContent = `回放本次搜索结果（${images.length}）`;
+    replay.addEventListener("click", () => renderResults(images.slice(), true));
+    bubble.parentElement.appendChild(replay);
   }
 
   /** 将 AI 检索结果同步到左侧主图片区域。 */
@@ -137,7 +175,9 @@ document.addEventListener("DOMContentLoaded", () => {
         assistantBubble = appendMessage("assistant", response.answer || "已完成检索。");
       }
       history.push({ role: "assistant", content: response.answer || assistantBubble.textContent || "" });
-      renderResults(response.images as ChatSearchHit[]);
+      const responseImages = Array.isArray(response.images) ? response.images as ChatSearchHit[] : [];
+      renderResults(responseImages);
+      addReplayButton(assistantBubble, responseImages);
       status.textContent = "检索与回答完成";
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -171,6 +211,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   showGallery.addEventListener("click", () => void showResultsInMainGallery());
+  resultsClose.addEventListener("click", () => {
+    if (resultsHideTimer) {
+      clearTimeout(resultsHideTimer);
+      resultsHideTimer = null;
+    }
+    resultsSection.hidden = true;
+  });
   window.addEventListener("beforeunload", removeEventListener, { once: true });
 });
 

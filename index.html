@@ -1204,13 +1204,47 @@
         }
 
         .ai-results-section {
+            position: absolute;
+            z-index: 20;
+            right: 0;
+            bottom: calc(100% + 8px);
+            left: 0;
             padding: 10px 13px;
             border-top-color: #e7ebf2;
+            border: 1px solid #e1e7f1;
+            border-radius: 11px;
             background: #fff;
+            box-shadow: 0 8px 24px rgba(36, 55, 88, 0.14);
         }
+
+        .ai-results-section[hidden] { display: none; }
 
         .ai-results-heading {
             color: #7b879b;
+        }
+
+        .ai-results-heading-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-results-close {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            color: #8390a5;
+            background: transparent;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 20px;
+        }
+
+        .ai-results-close:hover {
+            color: #4269ef;
+            background: #eef3ff;
         }
 
         .ai-result-card {
@@ -1233,10 +1267,37 @@
         }
 
         .ai-composer {
+            position: relative;
             gap: 8px;
             padding: 11px 13px 13px;
             border-top-color: #e7ebf2;
             background: #fff;
+            overflow: visible;
+        }
+
+        .ai-message-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .ai-message-wrap.user { align-items: flex-end; }
+        .ai-message-wrap .ai-message { margin-bottom: 4px; }
+
+        .ai-replay-search {
+            padding: 3px 8px;
+            border: 1px solid #d9e2fb;
+            border-radius: 999px;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .ai-replay-search:hover {
+            border-color: #aebef8;
+            background: #eaf0ff;
         }
 
         .ai-composer textarea {
@@ -1589,14 +1650,17 @@
             <button class="ai-suggestion" data-prompt="帮我找透明背景的卡通素材">透明素材</button>
             <button class="ai-suggestion" data-prompt="找一些高雅人士企鹅图片">企鹅素材</button>
         </div> -->
-        <section class="ai-results-section">
-            <div class="ai-results-heading">
-                <span id="ai-results-count">检索结果</span>
-                <button id="ai-show-gallery" class="ai-show-gallery" type="button" disabled>在主图区查看</button>
-            </div>
-            <div id="ai-results" class="ai-results"></div>
-        </section>
         <form id="ai-form" class="ai-composer">
+            <section class="ai-results-section">
+                <div class="ai-results-heading">
+                    <span id="ai-results-count">检索结果</span>
+                    <div class="ai-results-heading-actions">
+                        <button id="ai-show-gallery" class="ai-show-gallery" type="button" disabled>在主图区查看</button>
+                        <button id="ai-results-close" class="ai-results-close" type="button" aria-label="关闭检索结果">×</button>
+                    </div>
+                </div>
+                <div id="ai-results" class="ai-results"></div>
+            </section>
             <textarea id="ai-input" maxlength="2000" placeholder="描述想找的图片…" aria-label="AI 问题"></textarea>
             <button id="ai-send" class="ai-send" type="submit">发送</button>
         </form>
