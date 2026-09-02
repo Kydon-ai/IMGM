@@ -198,9 +198,11 @@ function bindEmbeddingIndex(): void {
   const progressBar = getElementByIdOrThrow<HTMLProgressElement>("embedding-index-progress-bar");
   const progressTitle = getElementByIdOrThrow<HTMLElement>("embedding-index-progress-title");
   const progressFile = getElementByIdOrThrow<HTMLElement>("embedding-index-progress-file");
+  const progressClose = getElementByIdOrThrow<HTMLButtonElement>("embedding-index-progress-close");
   let rootPath = "";
   let groups: ImageIndexGroup[] = [];
   let selected = new Set<string>();
+  let progressHideTimer: ReturnType<typeof setTimeout> | null = null;
 
   const updateSummary = (): void => {
     const total = groups.reduce((count, group) => count + group.images.length, 0);
@@ -279,15 +281,33 @@ function bindEmbeddingIndex(): void {
   };
   const closeDialog = (): void => { dialog.hidden = true; };
   const showProgress = (progress: ImageIndexProgress): void => {
+    if (progressHideTimer) {
+      clearTimeout(progressHideTimer);
+      progressHideTimer = null;
+    }
     progressCard.hidden = false;
     const percent = progress.total === 0 ? (progress.phase === "completed" ? 100 : 0) : Math.round((progress.completed / progress.total) * 100);
     progressBar.value = percent;
     progressTitle.textContent = `${progress.message || "正在处理图片索引"} · ${progress.completed}/${progress.total}`;
     progressFile.textContent = progress.currentPath || "";
     progressCard.classList.toggle("is-error", progress.phase === "error");
+    progressCard.classList.toggle("is-complete", progress.phase === "completed");
+    if (progress.phase === "completed") {
+      progressHideTimer = setTimeout(() => {
+        progressCard.hidden = true;
+        progressHideTimer = null;
+      }, 5000);
+    }
   };
 
   window.electron.onImageIndexProgress(showProgress);
+  progressClose.addEventListener("click", () => {
+    if (progressHideTimer) {
+      clearTimeout(progressHideTimer);
+      progressHideTimer = null;
+    }
+    progressCard.hidden = true;
+  });
   openButton.addEventListener("click", async () => {
     const pathElement = getElementByIdOrThrow<HTMLElement>("file-path");
     rootPath = pathElement.textContent?.trim() || "";

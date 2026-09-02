@@ -1374,6 +1374,9 @@
         .embedding-index-progress progress { width: 100%; height: 7px; accent-color: #5b7cfa; }
         .embedding-index-progress-file { display: block; overflow: hidden; margin-top: 8px; color: #75839a; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
         .embedding-index-progress.is-error { border-color: #f3b4b4; }
+        .embedding-index-progress-close { display: none; float: right; margin: -4px -3px 0 10px; padding: 2px 7px; border: 1px solid #dbe3ef; border-radius: 6px; color: #60708a; background: #fff; cursor: pointer; }
+        .embedding-index-progress.is-complete .embedding-index-progress-close { display: block; }
+        .embedding-index-progress-close:hover { color: #4269ef; border-color: #aebef8; background: #f4f7ff; }
     </style>
 </head>
 <body>
@@ -1617,6 +1620,7 @@
     </div>
 
     <section id="embedding-index-progress" class="embedding-index-progress" hidden aria-live="polite">
+        <button id="embedding-index-progress-close" class="embedding-index-progress-close" type="button">关闭</button>
         <span id="embedding-index-progress-title" class="embedding-index-progress-title">图片索引任务已提交</span>
         <progress id="embedding-index-progress-bar" value="0" max="100"></progress>
         <span id="embedding-index-progress-file" class="embedding-index-progress-file"></span>
