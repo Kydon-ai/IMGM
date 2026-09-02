@@ -8,6 +8,8 @@ export type AiConfig = {
   deepseekBaseUrl: string;
   datasetPath: string;
   imageDbPath: string;
+  textModelId: string;
+  imageModelId: string;
 };
 
 let envLoaded = false;
@@ -33,6 +35,8 @@ export function getAiConfig(): AiConfig {
     deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/$/, ""),
     datasetPath: path.resolve(process.env.IMAGE_DATASET_PATH || path.join("data", "dataset", "images.jsonl")),
     imageDbPath: path.resolve(process.env.IMAGE_DB_PATH || path.join("data", "app.db")),
+    textModelId: process.env.TEXT_MODEL_ID || "aurantium/clip-ViT-B-32-multilingual-v1",
+    imageModelId: process.env.IMAGE_MODEL_ID || "Xenova/clip-vit-base-patch32",
   };
 }
 

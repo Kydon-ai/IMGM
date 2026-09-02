@@ -244,7 +244,9 @@ npm run eval:retrieval
 | --- | --- |
 | `npm test` | 构建并运行单元测试 |
 | `npm run dataset:prepare` | 提取图片元数据并分层切分 |
-| `npm run models:download` | 预下载本地 AI 检索模型 |
+| `npm run models:download` | 预下载 CLIP 文本、图片和中文分词模型 |
+| `npm run images:import -- <图片目录> [数据库路径]` | 导入图片并生成图片/名称向量 |
+| `npm run images:reindex -- [数据库路径]` | 为已有 SQLite 图片记录重建图片/名称向量 |
 | `npm run eval:retrieval` | 计算并输出 Precision@8 |
 | `npm start` | 启动 Electron 应用 |
 
@@ -274,7 +276,9 @@ MCP 客户端配置示例（将路径替换为本项目的绝对路径）：
 }
 ```
 
-服务提供 `search_images` 工具，参数包括 `query`、`limit` 和 `category`。返回结果包含 `filePath`、`fileName`、类别、标签、描述、`file://` 地址、混合分数以及各分项分数。默认数据库路径为 `./data/app.db`，也可以通过 `IMAGE_DB_PATH` 指向参考项目的 `data/app.db`。首次执行检索时会按需下载 CLIP 文本模型和中文分词模型。
+服务提供 `search_images` 工具，参数包括 `query`、`limit` 和 `category`。返回结果包含 `filePath`、`fileName`、类别、标签、描述、`file://` 地址、混合分数以及各分项分数。默认数据库路径为 `./data/app.db`，也可以通过 `IMAGE_DB_PATH` 指向其他项目的 `data/app.db`。
+
+混合检索同时使用名称向量、图片视觉向量和关键词分数。默认模型为 `aurantium/clip-ViT-B-32-multilingual-v1` 与 `Xenova/clip-vit-base-patch32`，可通过 `.env` 中的 `TEXT_MODEL_ID`、`IMAGE_MODEL_ID` 修改。运行检索前先执行 `npm run models:download`；旧数据库需要执行一次 `npm run images:reindex`，否则 `image_embedding` 和 `name_embedding` 仍可能为空。
 
 # 参考资料📚
 

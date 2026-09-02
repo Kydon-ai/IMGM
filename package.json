@@ -10,7 +10,7 @@
     "electron-store": "^8.1.0",
     "notyf": "^3.10.0",
     "npm": "^10.5.2",
-    "sharp": "^0.35.3",
+    "sharp": "^0.34.5",
     "zod": "^3.25.76"
   },
   "name": "workspace",
@@ -36,6 +36,7 @@
     "test": "node scripts/ensure-electron-native.cjs && npm run build && node scripts/run-electron-tests.cjs",
     "dataset:prepare": "npm run build && node dist/cli/prepare-dataset.js",
     "images:import": "npm run build && node scripts/run-electron-node.cjs dist/cli/import-images-to-db.js",
+    "images:reindex": "npm run build && node scripts/run-electron-node.cjs dist/cli/rebuild-image-index.js",
     "models:download": "npm run build && node dist/cli/download-models.js",
     "eval:retrieval": "npm run build && node scripts/run-electron-node.cjs dist/cli/evaluate-retrieval.js",
     "mcp:build": "npm run build",

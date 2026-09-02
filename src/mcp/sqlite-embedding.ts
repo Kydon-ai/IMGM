@@ -1,14 +1,25 @@
-import { MetadataEmbeddings } from "../ai/hash-embeddings";
+import { getAiConfig } from "../ai/config";
 import { configureTransformersEnv } from "../ai/transformers-config";
 
-const TEXT_MODEL_ID = "aurantium/clip-ViT-B-32-multilingual-v1";
-const TEXT_MODEL_DTYPE = "q8" as const;
-const metadataEmbeddings = new MetadataEmbeddings();
+export const DEFAULT_TEXT_MODEL_ID = "aurantium/clip-ViT-B-32-multilingual-v1";
+export const DEFAULT_IMAGE_MODEL_ID = "Xenova/clip-vit-base-patch32";
+const MODEL_DTYPE = "q8" as const;
 
 let tokenizer: any = null;
 let textModel: any = null;
-let initPromise: Promise<void> | null = null;
+let processor: any = null;
+let visionModel: any = null;
+let textInitPromise: Promise<void> | null = null;
+let visionInitPromise: Promise<void> | null = null;
 let transformers: any = null;
+
+export function getTextModelId(): string {
+  return getAiConfig().textModelId || DEFAULT_TEXT_MODEL_ID;
+}
+
+export function getImageModelId(): string {
+  return getAiConfig().imageModelId || DEFAULT_IMAGE_MODEL_ID;
+}
 
 async function loadTransformers(): Promise<any> {
   transformers ||= await import("@huggingface/transformers");
@@ -21,27 +32,57 @@ async function initTextModel(): Promise<void> {
     return;
   }
 
-  if (initPromise) {
-    return initPromise;
+  if (textInitPromise) {
+    return textInitPromise;
   }
 
-  initPromise = (async () => {
+  textInitPromise = (async () => {
     const { AutoModel, AutoTokenizer } = await loadTransformers();
-    console.error(`Loading SQLite search text model: ${TEXT_MODEL_ID}`);
-    tokenizer = await AutoTokenizer.from_pretrained(TEXT_MODEL_ID, { local_files_only: true });
-    textModel = await AutoModel.from_pretrained(TEXT_MODEL_ID, {
-      dtype: TEXT_MODEL_DTYPE,
+    const modelId = getTextModelId();
+    console.error(`Loading SQLite search text model: ${modelId}`);
+    tokenizer = await AutoTokenizer.from_pretrained(modelId, { local_files_only: true });
+    textModel = await AutoModel.from_pretrained(modelId, {
+      dtype: MODEL_DTYPE,
       local_files_only: true,
     });
     console.error("SQLite search text model loaded");
   })().catch((error) => {
-    initPromise = null;
+    textInitPromise = null;
     tokenizer = null;
     textModel = null;
     throw error;
   });
 
-  return initPromise;
+  return textInitPromise;
+}
+
+async function initVisionModel(): Promise<void> {
+  if (processor && visionModel) {
+    return;
+  }
+
+  if (visionInitPromise) {
+    return visionInitPromise;
+  }
+
+  visionInitPromise = (async () => {
+    const { AutoProcessor, CLIPVisionModelWithProjection } = await loadTransformers();
+    const modelId = getImageModelId();
+    console.error(`Loading SQLite search image model: ${modelId}`);
+    processor = await AutoProcessor.from_pretrained(modelId, { local_files_only: true });
+    visionModel = await CLIPVisionModelWithProjection.from_pretrained(modelId, {
+      dtype: MODEL_DTYPE,
+      local_files_only: true,
+    });
+    console.error("SQLite search image model loaded");
+  })().catch((error) => {
+    visionInitPromise = null;
+    processor = null;
+    visionModel = null;
+    throw error;
+  });
+
+  return visionInitPromise;
 }
 
 function normalize(vector: number[]): number[] {
@@ -55,14 +96,21 @@ export async function embedText(text: string): Promise<number[]> {
   return vectors[0] || [];
 }
 
+/** Generate a normalized visual embedding in the same CLIP space as embedText. */
+export async function embedImage(imagePath: string): Promise<number[]> {
+  await initVisionModel();
+
+  const { RawImage } = await loadTransformers();
+  const image = await RawImage.read(imagePath);
+  const inputs = await processor(image);
+  const output = await visionModel(inputs);
+  const vector = Array.from(output.image_embeds.data) as number[];
+  return normalize(vector);
+}
+
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) {
     return [];
-  }
-
-  // 本地导入的 app.db 使用同一套轻量元数据向量，避免 Electron 首次请求下载并加载 ONNX 模型。
-  if ((process.env.IMAGE_EMBEDDING_PROVIDER || "clip").toLowerCase() !== "clip") {
-    return metadataEmbeddings.embedDocuments(texts);
   }
 
   await initTextModel();

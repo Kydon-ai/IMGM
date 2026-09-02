@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
 import { collectImageMetadata } from "../ai/metadata";
-import { MetadataEmbeddings } from "../ai/hash-embeddings";
 import { getAiConfig } from "../ai/config";
+import { embedImage, embedTexts } from "../mcp/sqlite-embedding";
 
 type ImportOptions = {
   rootPath: string;
@@ -18,6 +18,11 @@ function parseArguments(): ImportOptions {
 
 function vectorToBuffer(vector: number[]): Buffer {
   return Buffer.from(new Float32Array(vector).buffer);
+}
+
+function deriveNameFromFilename(filename: string): string {
+  const basename = path.parse(filename).name;
+  return basename.split("_").at(-1)?.trim() || basename;
 }
 
 function createSchema(database: Database.Database): void {
@@ -53,16 +58,39 @@ async function main(): Promise<void> {
   const database = new Database(databasePath);
   try {
     createSchema(database);
-    const embeddings = new MetadataEmbeddings();
-    const vectors = await embeddings.embedDocuments(metadata.map((item) => item.searchText));
+    const names = metadata.map((item) => deriveNameFromFilename(item.fileName));
+    console.log(`正在生成 ${metadata.length} 条名称向量...`);
+    const nameVectors = await embedTexts(names);
+    const imageVectors: number[][] = [];
+
+    // Vision inference is intentionally sequential. It avoids starting several
+    // ONNX sessions at once on the Electron/Windows native runtime.
+    for (const [index, item] of metadata.entries()) {
+      console.log(`[${index + 1}/${metadata.length}] 正在生成图片向量：${item.fileName}`);
+      try {
+        imageVectors.push(await embedImage(item.filePath));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`图片向量生成失败：${item.filePath}\n${message}`);
+      }
+    }
+
     const findExisting = database.prepare("SELECT id FROM images WHERE image_path = ? LIMIT 1");
     const insert = database.prepare(`
-      INSERT INTO images (original_filename, name, category, image_path, embedding)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO images (
+        original_filename,
+        name,
+        category,
+        image_path,
+        embedding,
+        image_embedding,
+        name_embedding
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const update = database.prepare(`
       UPDATE images
-      SET original_filename = ?, name = ?, category = ?, embedding = ?
+      SET original_filename = ?, name = ?, category = ?, embedding = ?, image_embedding = ?, name_embedding = ?
       WHERE id = ?
     `);
     const write = database.transaction(() => {
@@ -70,14 +98,15 @@ async function main(): Promise<void> {
       let updated = 0;
 
       metadata.forEach((item, index) => {
-        const searchableName = [item.fileName, item.category, ...item.subcategories, ...item.tags].join(" ");
-        const vector = vectorToBuffer(vectors[index] || []);
+        const name = names[index] || item.fileName;
+        const imageVector = vectorToBuffer(imageVectors[index] || []);
+        const nameVector = vectorToBuffer(nameVectors[index] || []);
         const existing = findExisting.get(item.filePath) as { id: number } | undefined;
         if (existing) {
-          update.run(item.fileName, searchableName, item.category, vector, existing.id);
+          update.run(item.fileName, name, item.category, imageVector, imageVector, nameVector, existing.id);
           updated += 1;
         } else {
-          insert.run(item.fileName, searchableName, item.category, item.filePath, vector);
+          insert.run(item.fileName, name, item.category, item.filePath, imageVector, imageVector, nameVector);
           inserted += 1;
         }
       });
