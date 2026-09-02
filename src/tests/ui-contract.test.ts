@@ -41,4 +41,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(chatSource, /setTimeout\(\(\) => \{[\s\S]*?5000/);
   assert.match(chatSource, /ai-replay-search/);
   assert.match(chatSource, /showResultsInMainGallery\(images\.slice\(\)\)/);
+
+  assert.doesNotMatch(html, /rename-btn|改标签/);
+  assert.doesNotMatch(domSource, /bindRenameActions|openRenameModel/);
+  assert.doesNotMatch(preloadSource, /openRenameModel|rename-btn/);
 });

@@ -102,7 +102,7 @@ npm run bingo
 
 ![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_3.png)
 
-扫描完成后点击确定,然后点击刷新图片即可开始查看目标文件夹下的图片资源了,您可以对他们进行重命名和快速复制
+扫描完成后点击确定,然后点击刷新图片即可开始查看目标文件夹下的图片资源了,您可以对他们进行快速复制
 
 ![](https://raw.githubusercontent.com/theOnlyUnique/IMGM/refs/heads/master/public/img/IMGM_4.png)
 

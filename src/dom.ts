@@ -102,12 +102,7 @@ async function moveToSearchHistory(delta: -1 | 1): Promise<void> {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  window.electron.ipcRenderer.on("modalData", () => {
-    window.electron.refresh();
-  });
-
   bindCopyActions();
-  bindRenameActions();
   bindSidebarNavigation();
   bindSettingsPopover();
   bindEmbeddingIndex();
@@ -540,24 +535,6 @@ function bindCopyActions(): void {
         }
       } catch (err) {
         console.error("Could not copy image: ", err);
-      }
-    });
-  });
-}
-
-/** 绑定图片重命名模态框入口。 */
-function bindRenameActions(): void {
-  document.querySelectorAll<HTMLButtonElement>(".rename-btn").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const maybeImg = button.previousElementSibling?.previousElementSibling;
-      if (!(maybeImg instanceof HTMLImageElement)) {
-        return;
-      }
-
-      try {
-        await window.electron.openRenameModel({ src: maybeImg.src });
-      } catch (err) {
-        console.error("Could not open modal: ", err);
       }
     });
   });

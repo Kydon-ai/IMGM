@@ -36,14 +36,7 @@ if (platform === "linux") {
 }
 
 let win: BrowserWindow | null = null;
-let modalWindow: BrowserWindow | null = null;
 let imageIndexTask: Promise<{ added: number; removed: number; unchanged: number }> | null = null;
-
-type ModalFilePayload = {
-  originPath: string;
-  changeName: string;
-  changeFileName: string;
-};
 
 const createWindow = (): void => {
   win = new BrowserWindow({
@@ -136,7 +129,7 @@ const createWindow = (): void => {
   registerAiIpc();
 };
 
-/** 注册主窗口所需的文件、缓存与重命名 IPC。 */
+/** 注册主窗口所需的文件、缓存与图片操作 IPC。 */
 function getAnimatedImageExtension(format?: string): string | null {
   switch (format) {
     case "gif":
@@ -458,86 +451,9 @@ function IPCRegister(currentWin: BrowserWindow): void {
     notification.show();
   });
 
-  ipcMain.on("rename-file", (_event, payload: { oldName: string; newName: string }) => {
-    const newPath = path.join(path.dirname(payload.oldName), payload.newName);
-    fs.rename(payload.oldName, newPath, (err) => {
-      if (err) {
-        console.error("重命名失败:", err);
-        return;
-      }
-      console.log(`文件重命名为: ${payload.newName}`);
-    });
-  });
-
   ipcMain.handle("getAllStore", () => {
     return store.store;
   });
-
-  ipcMain.handle("openRenameModel", (_event, props: { src: string }) => {
-    return createModalWindow(props);
-  });
-
-  ipcMain.on("modalToOther", (_event, filePayload: ModalFilePayload) => {
-    if (store.get("mode", "local") !== "local") {
-      return;
-    }
-
-    const targetList = (store.get(LOCAL_TARGET_LIST_KEY) as string[]) || [];
-    const imageList = (store.get(LOCAL_IMAGE_LIST_KEY) as string[]) || [];
-    filePayload.originPath = convertFileUrlToPath(filePayload.originPath);
-
-    const renamedPath = path.join(path.dirname(filePayload.originPath), filePayload.changeName);
-    const replacePath = (items: string[]): string[] => items.map((item) => item === filePayload.originPath ? renamedPath : item);
-    const renamedTargetList = replacePath(targetList);
-    const renamedImageList = replacePath(imageList);
-
-    if (renamedTargetList.some((item, index) => item !== targetList[index])) {
-      store.set(LOCAL_TARGET_LIST_KEY, renamedTargetList);
-      store.set(LOCAL_IMAGE_LIST_KEY, renamedImageList);
-    }
-
-    rename(filePayload.originPath, filePayload.changeFileName);
-
-    if (win) {
-      win.webContents.send("modalData", filePayload);
-    }
-  });
-}
-
-/** 创建图片重命名模态窗口。 */
-function createModalWindow(props: { src: string }): string {
-  if (modalWindow) {
-    return "新建失败，模态框已存在";
-  }
-
-  if (!win) {
-    return "新建失败，主窗口不存在";
-  }
-
-  modalWindow = new BrowserWindow({
-    width: 400,
-    height: 300,
-    parent: win,
-    modal: true,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-
-  modalWindow.loadFile(path.join(__dirname, "../modal.html"));
-
-  modalWindow.webContents.on("did-finish-load", () => {
-    if (modalWindow) {
-      modalWindow.webContents.send("data-from-main", props);
-    }
-  });
-
-  modalWindow.on("closed", () => {
-    modalWindow = null;
-  });
-
-  return "新建成功";
 }
 
 /** 递归遍历目录并收集图片路径。 */
@@ -587,25 +503,3 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   void closeAiRuntime();
 });
-
-/** 将 file URL 转换为当前平台的文件系统路径。 */
-function convertFileUrlToPath(fileUrl: string): string {
-  const normalizedPath = fileUrl
-    .replace(/^file:\/\//, "")
-    .replace(/^\/([a-z]:)/i, "$1")
-    .replace(/\//g, path.sep);
-
-  return normalizedPath;
-}
-
-/** 把图片文件重命名为用户指定名称。 */
-function rename(oldPath: string, fileName: string): void {
-  const newPath = path.join(path.dirname(oldPath), fileName);
-  fs.rename(oldPath, newPath, (err) => {
-    if (err) {
-      console.error("重命名失败:", err);
-      return;
-    }
-    console.log(`文件重命名为: ${fileName},路径在${newPath}`);
-  });
-}

@@ -73,10 +73,6 @@ contextBridge.exposeInMainWorld("electron", {
     const store = await ipcRenderer.invoke("getAllStore");
     return store;
   },
-  openRenameModel: async (datas: { src: string }) => {
-    const msg = await ipcRenderer.invoke("openRenameModel", datas);
-    return msg;
-  },
   ai: {
     ask: (request: unknown) => ipcRenderer.invoke("aiAsk", request),
     onEvent: (callback: (event: unknown) => void) => {
@@ -112,7 +108,7 @@ async function refreshPage(): Promise<void> {
   const currentPage = (await ipcRenderer.invoke("getData", storage.page)) as number;
 
   const pageOfImages = getImageList(imgList || [], currentPage || 1, storage.pageSize);
-  setImgUrl(pageOfImages, mode, storage.pageSize);
+  setImgUrl(pageOfImages, storage.pageSize);
 }
 
 /** 获取当前展示模块，缺省时使用本地图片库。 */
@@ -135,16 +131,14 @@ function getImageList(imgList: string[], currentPage: number, pageSize: number):
 }
 
 /** 把当前页图片绑定到当前模块的展示槽位。 */
-function setImgUrl(pageOfImages: string[], mode: GalleryMode, pageSize: number): void {
+function setImgUrl(pageOfImages: string[], pageSize: number): void {
   const itemElements = document.querySelectorAll<HTMLElement>(".grid-img .img-item");
   const imgElements = document.querySelectorAll<HTMLImageElement>(".grid-img .img-item img");
   const copyElements = document.querySelectorAll<HTMLButtonElement>(".grid-img .copy-btn");
-  const renameElements = document.querySelectorAll<HTMLButtonElement>(".grid-img .rename-btn");
 
   for (let i = 0; i < imgElements.length; i += 1) {
     const itemElement = itemElements[i];
     const copyElement = copyElements[i];
-    const renameElement = renameElements[i];
     const isVisibleSlot = i < pageSize;
     if (itemElement) {
       itemElement.hidden = !isVisibleSlot;
@@ -156,19 +150,11 @@ function setImgUrl(pageOfImages: string[], mode: GalleryMode, pageSize: number):
         copyElement.disabled = false;
         copyElement.hidden = false;
       }
-      if (renameElement) {
-        renameElement.disabled = mode !== "local";
-        renameElement.hidden = mode !== "local";
-      }
     } else {
       imgElements[i].src = "./public/img/404.png";
       if (copyElement) {
         copyElement.disabled = true;
         copyElement.hidden = true;
-      }
-      if (renameElement) {
-        renameElement.disabled = true;
-        renameElement.hidden = true;
       }
     }
   }

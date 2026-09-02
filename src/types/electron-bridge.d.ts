@@ -92,7 +92,6 @@ type ElectronBridge = {
   showMessage: (type: string, msg: string) => void;
   getUser: () => Promise<{ username: string; [key: string]: unknown }>;
   getCache: () => Promise<Record<string, unknown>>;
-  openRenameModel: (datas: { src: string }) => Promise<string>;
   ai: {
     ask: (request: {
       requestId: string;
