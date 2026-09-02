@@ -107,13 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
     replay.type = "button";
     replay.className = "ai-replay-search";
     replay.textContent = `回放本次搜索结果（${images.length}）`;
-    replay.addEventListener("click", () => renderResults(images.slice(), true));
+    replay.addEventListener("click", () => void showResultsInMainGallery(images.slice()));
     bubble.parentElement.appendChild(replay);
   }
 
   /** 将 AI 检索结果同步到左侧主图片区域。 */
-  async function showResultsInMainGallery(): Promise<void> {
-    const paths = currentImages.map((item) => item.filePath);
+  async function showResultsInMainGallery(images = currentImages): Promise<void> {
+    const paths = images.map((item) => item.filePath);
     if (!paths.length) {
       return;
     }
