@@ -363,7 +363,9 @@ function bindEmbeddingIndex(): void {
     const percent = progress.total === 0 ? (progress.phase === "completed" ? 100 : 0) : Math.round((progress.completed / progress.total) * 100);
     progressBar.value = percent;
     progressTitle.textContent = `${progress.message || "正在处理图片索引"} · ${progress.completed}/${progress.total}`;
-    progressFile.textContent = progress.currentPath || "";
+    progressFile.textContent = progress.currentPath
+      ? progress.currentPath.split(/[\\/]/).pop() || progress.currentPath
+      : "";
     progressCard.classList.toggle("is-error", progress.phase === "error");
     progressCard.classList.toggle("is-complete", progress.phase === "completed");
     if (progress.phase === "completed") {
