@@ -28,6 +28,20 @@ type ImageIndexProgress = {
   message?: string;
 };
 
+type SearchHistorySource = "directory" | "ai";
+
+type SearchHistoryEntry = {
+  source: SearchHistorySource;
+  label: string;
+  images: string[];
+  createdAt: number;
+};
+
+type SearchHistoryState = {
+  entries: SearchHistoryEntry[];
+  pointer: number;
+};
+
 /** 获取当前图片列表所属模块，缺省时使用本地图片库。 */
 async function getCurrentGalleryMode(): Promise<GalleryMode> {
   const mode = await window.electron.getData<string>("mode");
@@ -51,6 +65,42 @@ async function switchGalleryMode(mode: GalleryMode): Promise<void> {
   await window.electron.refresh();
 }
 
+function updateSearchHistoryControls(state: SearchHistoryState): void {
+  const previous = getElementByIdOrThrow<HTMLButtonElement>("search-history-previous");
+  const next = getElementByIdOrThrow<HTMLButtonElement>("search-history-next");
+  previous.disabled = state.pointer <= 0;
+  next.disabled = state.pointer < 0 || state.pointer >= state.entries.length - 1;
+  previous.title = state.pointer > 0 ? `查看：${state.entries[state.pointer - 1].label}` : "没有更早的搜索结果";
+  next.title = state.pointer >= 0 && state.pointer < state.entries.length - 1
+    ? `查看：${state.entries[state.pointer + 1].label}`
+    : "没有更新的搜索结果";
+}
+
+async function showSearchHistoryEntry(entry: SearchHistoryEntry): Promise<void> {
+  await Promise.all([
+    window.electron.setData(GALLERY_STORAGE.local.targetList, entry.images),
+    window.electron.setData(GALLERY_STORAGE.local.imageList, entry.images),
+    window.electron.setData(GALLERY_STORAGE.local.page, 1),
+    window.electron.setData("mode", "local"),
+  ]);
+  if (entry.source === "directory") {
+    const filePathElement = getElementByIdOrThrow<HTMLElement>("file-path");
+    filePathElement.textContent = entry.label;
+    await window.electron.setData("scanPath", entry.label);
+  }
+  await updatePagination("local");
+  window.electron.refresh(false);
+}
+
+async function moveToSearchHistory(delta: -1 | 1): Promise<void> {
+  const state = await window.electron.moveSearchHistory(delta);
+  const entry = state.entries[state.pointer];
+  if (entry) {
+    await showSearchHistoryEntry(entry);
+  }
+  updateSearchHistoryControls(state);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   window.electron.ipcRenderer.on("modalData", () => {
     window.electron.refresh();
@@ -61,6 +111,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindSidebarNavigation();
   bindSettingsPopover();
   bindEmbeddingIndex();
+  window.addEventListener("search-history-changed", (event) => {
+    const state = (event as CustomEvent<SearchHistoryState>).detail;
+    if (state) {
+      updateSearchHistoryControls(state);
+    }
+  });
+  updateSearchHistoryControls(await window.electron.getSearchHistory());
 
   await window.electron.refresh();
   await updatePagination();
@@ -89,7 +146,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const filePath = filePathElement.textContent || "";
 
     if (filePath && (await window.electron.checkDir(filePath))) {
-      await window.electron.scanDir(filePath);
+      const images = await window.electron.scanDir(filePath);
+      const historyState = await window.electron.appendSearchHistory({
+        source: "directory",
+        label: filePath,
+        images,
+        createdAt: Date.now(),
+      });
+      updateSearchHistoryControls(historyState);
       await window.electron.setData("mode", "local");
       await updatePagination("local");
       window.electron.showMessage("success", "搜索完毕!!!");
@@ -100,11 +164,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("refresh-pic").addEventListener("click", async () => {
-    await refreshAndResetPage();
+    const historyState = await window.electron.activateLatestDirectorySearch();
+    const entry = historyState.entries[historyState.pointer];
+    if (entry) {
+      await showSearchHistoryEntry(entry);
+    } else {
+      await refreshAndResetPage();
+    }
+    updateSearchHistoryControls(historyState);
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("rir-refresh-pic").addEventListener("click", async () => {
     await refreshAndResetPage();
+  });
+
+  getElementByIdOrThrow<HTMLButtonElement>("search-history-previous").addEventListener("click", async () => {
+    await moveToSearchHistory(-1);
+  });
+
+  getElementByIdOrThrow<HTMLButtonElement>("search-history-next").addEventListener("click", async () => {
+    await moveToSearchHistory(1);
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("forward").addEventListener("click", async () => {

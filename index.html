@@ -122,11 +122,60 @@
 
         #file-path {
         }
-		.url-style {
+        .url-style {
             font-weight: bold;
             color: #4285f4;
             margin-left: 5px;
 		}
+
+        .local-path-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 28px;
+        }
+
+        .local-path-row > p {
+            min-width: 0;
+            margin: 8px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .search-history-controls {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-history-button {
+            display: grid;
+            place-items: center;
+            width: 29px;
+            height: 27px;
+            padding: 0;
+            border: 1px solid #dce5f3;
+            border-radius: 7px;
+            color: #5b7cfa;
+            background: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .search-history-button:hover:not(:disabled) {
+            border-color: #aebef8;
+            background: #eef3ff;
+        }
+
+        .search-history-button:disabled {
+            color: #b9c3d2;
+            background: #f5f7fa;
+            cursor: not-allowed;
+        }
 
         /* 图片展示区域 - 修复高度问题 */
         .image-container {
@@ -1491,7 +1540,13 @@
     <main class="image-browser">
 
     <section id="local-section" class="browser-section active" data-page-section>
-    <p>请选择扫描文件夹路径：<span id="file-path" class="url-style"></span></p>
+    <div class="local-path-row">
+        <p>请选择扫描文件夹路径：<span id="file-path" class="url-style"></span></p>
+        <div class="search-history-controls" aria-label="搜索结果历史">
+            <button id="search-history-previous" class="search-history-button" type="button" aria-label="查看上一次搜索结果" disabled>←</button>
+            <button id="search-history-next" class="search-history-button" type="button" aria-label="查看下一次搜索结果" disabled>→</button>
+        </div>
+    </div>
     
     <!-- 工具栏 -->
     <div class="toolbar">

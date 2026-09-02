@@ -10,6 +10,7 @@ import sharp from "sharp";
 import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
 import { applyImageIndexSelection, ImageIndexProgress, scanImageIndexGroups } from "./ai/image-indexer";
 import { getAiConfig } from "./ai/config";
+import type { SearchHistoryEntry, SearchHistoryState } from "./types/search-history";
 
 const execFileAsync = promisify(execFile);
 const store = new Store();
@@ -20,6 +21,8 @@ const RIR_TARGET_LIST_KEY = "rirTargetList";
 const RIR_IMAGE_LIST_KEY = "rirImgList";
 const LOCAL_PAGE_KEY = "localPage";
 const RIR_PAGE_KEY = "rirPage";
+const SEARCH_HISTORY_KEY = "localSearchHistory";
+const SEARCH_HISTORY_POINTER_KEY = "localSearchHistoryPointer";
 const RIR_CLIPBOARD_DIRECTORY = "imgm-rir-clipboard";
 const RIR_CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 let forwardRendererConsole = store.get(FORWARD_RENDERER_CONSOLE_KEY, true);
@@ -216,7 +219,81 @@ async function writeAnimatedImageFileToClipboard(imageBuffer: Buffer, format?: s
   void cleanupRirClipboardFiles(directory, filePath).catch(() => undefined);
 }
 
+function validateSearchHistoryEntry(value: unknown): SearchHistoryEntry {
+  const entry = value as Partial<SearchHistoryEntry> | null;
+  if (!entry || (entry.source !== "directory" && entry.source !== "ai")
+    || typeof entry.label !== "string" || !Array.isArray(entry.images)
+    || !entry.images.every((image) => typeof image === "string")) {
+    throw new Error("搜索历史记录格式不正确");
+  }
+  return {
+    source: entry.source,
+    label: entry.label.slice(0, 2000),
+    images: entry.images.slice(),
+    createdAt: typeof entry.createdAt === "number" ? entry.createdAt : Date.now(),
+  };
+}
+
+function readSearchHistory(): SearchHistoryState {
+  const rawEntries = store.get(SEARCH_HISTORY_KEY, []) as unknown;
+  const entries = Array.isArray(rawEntries)
+    ? rawEntries.flatMap((item) => {
+      try {
+        return [validateSearchHistoryEntry(item)];
+      } catch {
+        return [];
+      }
+    })
+    : [];
+  const rawPointer = store.get(SEARCH_HISTORY_POINTER_KEY, entries.length - 1) as unknown;
+  const requestedPointer = typeof rawPointer === "number" && Number.isInteger(rawPointer)
+    ? rawPointer
+    : entries.length - 1;
+  return {
+    entries,
+    pointer: entries.length === 0 ? -1 : Math.max(0, Math.min(entries.length - 1, requestedPointer)),
+  };
+}
+
+function writeSearchHistory(state: SearchHistoryState): void {
+  store.set(SEARCH_HISTORY_KEY, state.entries);
+  store.set(SEARCH_HISTORY_POINTER_KEY, state.pointer);
+}
+
 function IPCRegister(currentWin: BrowserWindow): void {
+  ipcMain.handle("getSearchHistory", () => readSearchHistory());
+
+  ipcMain.handle("appendSearchHistory", (_event, rawEntry: unknown) => {
+    const entry = validateSearchHistoryEntry(rawEntry);
+    const state = readSearchHistory();
+    state.entries.push(entry);
+    state.pointer = state.entries.length - 1;
+    writeSearchHistory(state);
+    return state;
+  });
+
+  ipcMain.handle("moveSearchHistory", (_event, rawDelta: unknown) => {
+    const state = readSearchHistory();
+    if (state.entries.length === 0 || (rawDelta !== -1 && rawDelta !== 1)) {
+      return state;
+    }
+    state.pointer = Math.max(0, Math.min(state.entries.length - 1, state.pointer + rawDelta));
+    writeSearchHistory(state);
+    return state;
+  });
+
+  ipcMain.handle("activateLatestDirectorySearch", () => {
+    const state = readSearchHistory();
+    for (let index = state.entries.length - 1; index >= 0; index -= 1) {
+      if (state.entries[index].source === "directory") {
+        state.pointer = index;
+        writeSearchHistory(state);
+        return state;
+      }
+    }
+    return state;
+  });
+
   ipcMain.handle("scanImageIndexGroups", async (_event, rawRootPath: unknown) => {
     if (typeof rawRootPath !== "string" || !rawRootPath.trim()) {
       throw new Error("请先选择有效的图片目录");

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { Notyf } from "notyf";
+import type { SearchHistoryEntry, SearchHistoryState } from "./types/search-history";
 
 type CopyWebImageResult = {
   success: boolean;
@@ -47,11 +48,17 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("imageIndexProgress", listener);
     return () => ipcRenderer.removeListener("imageIndexProgress", listener);
   },
+  getSearchHistory: (): Promise<SearchHistoryState> => ipcRenderer.invoke("getSearchHistory"),
+  appendSearchHistory: (entry: SearchHistoryEntry): Promise<SearchHistoryState> => ipcRenderer.invoke("appendSearchHistory", entry),
+  moveSearchHistory: (delta: -1 | 1): Promise<SearchHistoryState> => ipcRenderer.invoke("moveSearchHistory", delta),
+  activateLatestDirectorySearch: (): Promise<SearchHistoryState> => ipcRenderer.invoke("activateLatestDirectorySearch"),
   getData: (key: string) => ipcRenderer.invoke("getData", key),
   setData: (key: string, data: unknown) => ipcRenderer.invoke("setData", key, data),
-  refresh: () => {
+  refresh: (showNotice = true) => {
     refreshPage();
-    showMessage("success", "刷新当前浏览");
+    if (showNotice) {
+      showMessage("success", "刷新当前浏览");
+    }
   },
   sendMsg: (msg: string) => ipcRenderer.send("message", msg),
   showMessage: (type: string, msg: string) => {

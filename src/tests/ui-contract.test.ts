@@ -18,6 +18,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="add-embedding"/);
   assert.match(html, /id="embedding-index-dialog"/);
   assert.match(html, /id="embedding-index-progress"/);
+  assert.match(html, /id="search-history-previous"/);
+  assert.match(html, /id="search-history-next"/);
   assert.match(html, /id="ai-results-close"/);
   assert.match(html, /<form id="ai-form" class="ai-composer">\s*<section id="ai-results-section" class="ai-results-section">/);
   assert.equal((html.match(/<div class="img-item">/g) || []).length, 12, "图片展示槽位应为 12 个");
@@ -26,6 +28,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(domSource, /querySelectorAll<HTMLButtonElement>\("\.imgm-nav-item"\)/);
   assert.match(domSource, /local: \{[^}]*pageSize: 8/);
   assert.match(domSource, /rir: \{[^}]*pageSize: 12/);
+  assert.match(domSource, /activateLatestDirectorySearch/);
+  assert.match(domSource, /appendSearchHistory/);
 
   const preloadSource = fs.readFileSync(path.resolve(process.cwd(), "src/preload.ts"), "utf8");
   assert.match(preloadSource, /local: \{[^}]*pageSize: 8/);

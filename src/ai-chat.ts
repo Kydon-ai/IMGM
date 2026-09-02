@@ -178,6 +178,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const responseImages = Array.isArray(response.images) ? response.images as ChatSearchHit[] : [];
       renderResults(responseImages);
       addReplayButton(assistantBubble, responseImages);
+      if (responseImages.length > 0) {
+        try {
+          const historyState = await window.electron.appendSearchHistory({
+            source: "ai",
+            label: `AI：${message}`,
+            images: responseImages.map((item) => item.filePath),
+            createdAt: Date.now(),
+          });
+          window.dispatchEvent(new CustomEvent("search-history-changed", { detail: historyState }));
+        } catch (historyError) {
+          console.error("保存 AI 搜索历史失败:", historyError);
+        }
+      }
       status.textContent = "检索与回答完成";
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);

@@ -53,6 +53,20 @@ type ImageIndexProgress = {
   message?: string;
 };
 
+type SearchHistorySource = "directory" | "ai";
+
+type SearchHistoryEntry = {
+  source: SearchHistorySource;
+  label: string;
+  images: string[];
+  createdAt: number;
+};
+
+type SearchHistoryState = {
+  entries: SearchHistoryEntry[];
+  pointer: number;
+};
+
 type ElectronBridge = {
   clipboard: {
     copyWebImage: (url: string) => Promise<CopyWebImageResult>;
@@ -67,9 +81,13 @@ type ElectronBridge = {
   scanImageIndexGroups: (rootPath: string) => Promise<ImageIndexGroup[]>;
   applyImageIndexSelection: (payload: { rootPath: string; selectedPaths: string[] }) => Promise<{ added: number; removed: number; unchanged: number }>;
   onImageIndexProgress: (callback: (progress: ImageIndexProgress) => void) => () => void;
+  getSearchHistory: () => Promise<SearchHistoryState>;
+  appendSearchHistory: (entry: SearchHistoryEntry) => Promise<SearchHistoryState>;
+  moveSearchHistory: (delta: -1 | 1) => Promise<SearchHistoryState>;
+  activateLatestDirectorySearch: () => Promise<SearchHistoryState>;
   getData: <T = unknown>(key: string) => Promise<T>;
   setData: (key: string, data: unknown) => Promise<void>;
-  refresh: () => void;
+  refresh: (showNotice?: boolean) => void;
   sendMsg: (msg: string) => void;
   showMessage: (type: string, msg: string) => void;
   getUser: () => Promise<{ username: string; [key: string]: unknown }>;
