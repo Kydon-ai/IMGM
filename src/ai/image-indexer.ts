@@ -134,8 +134,23 @@ export async function scanImageIndexGroups(rootPath: string, databasePath: strin
   const database = new Database(databasePath);
   try {
     ensureIndexSchema(database);
-    const indexedPaths = new Set(readIndexedRows(database).map((row) => pathKey(resolveStoredPath(row.image_path, databasePath))));
+    const rows = readIndexedRows(database);
+    const indexedPaths = new Set(rows.map((row) => pathKey(resolveStoredPath(row.image_path, databasePath))));
     const groups = await collectGroups(resolvedRoot);
+    const scannedPaths = new Set([...groups.values()].flat().map(pathKey));
+    // Keep indexed directories visible after the user changes file-path.
+    for (const row of rows) {
+      const filePath = resolveStoredPath(row.image_path, databasePath);
+      if (scannedPaths.has(pathKey(filePath))) {
+        continue;
+      }
+      const directoryPath = path.dirname(filePath);
+      const images = groups.get(directoryPath) || [];
+      if (!images.some((existingPath) => pathKey(existingPath) === pathKey(filePath))) {
+        images.push(filePath);
+      }
+      groups.set(directoryPath, images);
+    }
     return [...groups.entries()].map(([directoryPath, images]) => ({
       directoryPath,
       images: images.map((filePath) => ({
@@ -161,11 +176,6 @@ export async function applyImageIndexSelection(options: {
   const scannedPaths = [...groups.values()].flat();
   const scannedByKey = new Map(scannedPaths.map((filePath) => [pathKey(filePath), filePath]));
   const selectedKeys = new Set(options.selectedPaths.map(pathKey));
-  for (const key of selectedKeys) {
-    if (!scannedByKey.has(key)) {
-      throw new Error("提交的图片不属于当前扫描目录，请重新打开索引列表后再试");
-    }
-  }
 
   fs.mkdirSync(path.dirname(options.databasePath), { recursive: true });
   const database = new Database(options.databasePath);
@@ -173,11 +183,14 @@ export async function applyImageIndexSelection(options: {
     ensureIndexSchema(database);
     const rows = readIndexedRows(database);
     const existingByKey = new Map(rows.map((row) => [pathKey(resolveStoredPath(row.image_path, options.databasePath)), row]));
-    const scopedKeys = new Set(scannedByKey.keys());
-    const removals = rows.filter((row) => {
-      const key = pathKey(resolveStoredPath(row.image_path, options.databasePath));
-      return scopedKeys.has(key) && !selectedKeys.has(key);
-    });
+    const knownKeys = new Set([...scannedByKey.keys(), ...existingByKey.keys()]);
+    for (const key of selectedKeys) {
+      if (!knownKeys.has(key)) {
+        throw new Error("提交的图片不在索引管理列表中，请重新打开索引列表后再试");
+      }
+    }
+    // The dialog contains current files and all historical indexed files.
+    const removals = rows.filter((row) => !selectedKeys.has(pathKey(resolveStoredPath(row.image_path, options.databasePath))));
     const additions = [...selectedKeys]
       .filter((key) => !existingByKey.has(key))
       .map((key) => scannedByKey.get(key) as string);

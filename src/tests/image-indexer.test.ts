@@ -32,6 +32,9 @@ test("索引扫描按目录分组，并保留数据库已有图片的勾选状�
     groups = await scanImageIndexGroups(directory, databasePath);
     const indexed = groups.flatMap((group) => group.images).find((item) => item.filePath === rootImage);
     assert.equal(indexed?.indexed, true);
+
+    groups = await scanImageIndexGroups(nestedDirectory, databasePath);
+    assert.equal(groups.flatMap((group) => group.images).some((item) => item.filePath === rootImage && item.indexed), true);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
