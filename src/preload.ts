@@ -10,6 +10,17 @@ type CopyWebImageResult = {
 
 type GalleryMode = "local" | "rir";
 
+type ImageIndexProgress = {
+  phase: "starting" | "processing" | "completed" | "error";
+  currentPath?: string;
+  completed: number;
+  total: number;
+  added: number;
+  removed: number;
+  unchanged: number;
+  message?: string;
+};
+
 const GALLERY_STORAGE = {
   local: { imageList: "localImgList", page: "localPage", pageSize: 8 },
   rir: { imageList: "rirImgList", page: "rirPage", pageSize: 12 },
@@ -29,6 +40,13 @@ contextBridge.exposeInMainWorld("electron", {
   openDirectory: () => ipcRenderer.invoke("openDirectory"),
   scanDir: (dirPath: string) => ipcRenderer.invoke("scanDir", dirPath),
   checkDir: (dirPath: string) => ipcRenderer.invoke("checkDir", dirPath),
+  scanImageIndexGroups: (rootPath: string) => ipcRenderer.invoke("scanImageIndexGroups", rootPath),
+  applyImageIndexSelection: (payload: { rootPath: string; selectedPaths: string[] }) => ipcRenderer.invoke("applyImageIndexSelection", payload),
+  onImageIndexProgress: (callback: (progress: ImageIndexProgress) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: ImageIndexProgress): void => callback(progress);
+    ipcRenderer.on("imageIndexProgress", listener);
+    return () => ipcRenderer.removeListener("imageIndexProgress", listener);
+  },
   getData: (key: string) => ipcRenderer.invoke("getData", key),
   setData: (key: string, data: unknown) => ipcRenderer.invoke("setData", key, data),
   refresh: () => {

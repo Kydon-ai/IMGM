@@ -1267,6 +1267,113 @@
         .ai-send:hover:not(:disabled) {
             background: var(--imgm-blue-dark);
         }
+
+        .embedding-index-dialog {
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 28px;
+            background: rgba(18, 30, 55, 0.34);
+        }
+
+        .embedding-index-dialog[hidden] { display: none; }
+
+        .embedding-index-panel {
+            display: flex;
+            flex-direction: column;
+            width: min(820px, 92vw);
+            max-height: min(720px, 88vh);
+            overflow: hidden;
+            border: 1px solid #dfe6f1;
+            border-radius: 16px;
+            background: #f8faff;
+            box-shadow: 0 22px 60px rgba(31, 54, 96, 0.28);
+        }
+
+        .embedding-index-header,
+        .embedding-index-footer {
+            padding: 16px 20px;
+            background: #fff;
+        }
+
+        .embedding-index-header { border-bottom: 1px solid #e6ebf3; }
+        .embedding-index-header h2 { margin: 0 0 7px; font-size: 18px; }
+        .embedding-index-header p { margin: 0; color: #5c6c85; font-size: 13px; word-break: break-all; }
+        .embedding-index-summary { margin-top: 8px !important; color: #5b7cfa !important; }
+
+        .embedding-index-groups {
+            flex: 1;
+            min-height: 180px;
+            overflow: auto;
+            padding: 12px 16px;
+        }
+
+        .embedding-index-group {
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #e0e7f2;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .embedding-index-group-header { display: flex; align-items: center; min-height: 44px; padding: 0 12px; gap: 10px; }
+        .embedding-index-group-toggle {
+            display: flex;
+            flex: 1;
+            align-items: center;
+            min-width: 0;
+            padding: 8px 0;
+            border: 0;
+            color: #31415c;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: left;
+        }
+        .embedding-index-group-toggle > span { overflow: hidden; margin-left: 9px; text-overflow: ellipsis; white-space: nowrap; }
+        .embedding-index-group-toggle[aria-expanded="true"] { color: #4269ef; }
+        .embedding-index-group-toggle[aria-expanded="true"]::first-letter { transform: rotate(90deg); }
+
+        .embedding-index-items { border-top: 1px solid #edf1f7; }
+        .embedding-index-item {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) 54px;
+            align-items: center;
+            min-height: 62px;
+            padding: 7px 13px;
+            gap: 12px;
+            border-bottom: 1px solid #f0f3f7;
+            cursor: pointer;
+        }
+        .embedding-index-item:last-child { border-bottom: 0; }
+        .embedding-index-item:hover { background: #f4f7ff; }
+        .embedding-index-file-name { overflow: hidden; color: #374151; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+        .embedding-index-preview { width: 52px; height: 46px; border-radius: 6px; background: #eef2f7; object-fit: cover; }
+
+        .embedding-index-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e6ebf3; }
+        .embedding-index-footer button { min-width: 76px; }
+        .embedding-index-apply { border-color: #5b7cfa; color: #fff; background: #5b7cfa; }
+        .embedding-index-apply:hover:not(:disabled) { background: #4269ef; }
+
+        .embedding-index-progress {
+            position: fixed;
+            z-index: 900;
+            right: 22px;
+            bottom: 22px;
+            width: min(360px, calc(100vw - 44px));
+            padding: 14px;
+            border: 1px solid #dce5f3;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(38, 59, 97, 0.16);
+        }
+        .embedding-index-progress[hidden] { display: none; }
+        .embedding-index-progress-title { display: block; margin-bottom: 9px; color: #334155; font-size: 13px; font-weight: 600; }
+        .embedding-index-progress progress { width: 100%; height: 7px; accent-color: #5b7cfa; }
+        .embedding-index-progress-file { display: block; overflow: hidden; margin-top: 8px; color: #75839a; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+        .embedding-index-progress.is-error { border-color: #f3b4b4; }
     </style>
 </head>
 <body>
@@ -1343,6 +1450,9 @@
                 </button>
                 <button id="check-cache" class="toolbar-btn ghost">
                     <span class="icon">🗃️</span> 缓存
+                </button>
+                <button id="add-embedding" class="toolbar-btn ghost">
+                    <span class="icon"></span> 索引图片
                 </button>
             </div>
         </div>
@@ -1490,6 +1600,27 @@
     </aside>
     </div>
     </div>
+
+    <div id="embedding-index-dialog" class="embedding-index-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="embedding-index-title">
+        <section class="embedding-index-panel">
+            <header class="embedding-index-header">
+                <h2 id="embedding-index-title">图片索引管理</h2>
+                <p id="embedding-index-path"></p>
+                <p id="embedding-index-summary" class="embedding-index-summary"></p>
+            </header>
+            <div id="embedding-index-groups" class="embedding-index-groups"></div>
+            <footer class="embedding-index-footer">
+                <button id="embedding-index-cancel" class="toolbar-btn ghost" type="button">取消</button>
+                <button id="embedding-index-apply" class="toolbar-btn embedding-index-apply" type="button">应用</button>
+            </footer>
+        </section>
+    </div>
+
+    <section id="embedding-index-progress" class="embedding-index-progress" hidden aria-live="polite">
+        <span id="embedding-index-progress-title" class="embedding-index-progress-title">图片索引任务已提交</span>
+        <progress id="embedding-index-progress-bar" value="0" max="100"></progress>
+        <span id="embedding-index-progress-file" class="embedding-index-progress-file"></span>
+    </section>
 
     <script src="./dist/dom.js"></script>
     <script src="./dist/ai-chat.js"></script>

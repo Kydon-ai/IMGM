@@ -30,6 +30,29 @@ type AiChatResponsePayload = {
   images: AiSearchHit[];
 };
 
+type ImageIndexItem = {
+  filePath: string;
+  fileName: string;
+  fileUrl: string;
+  indexed: boolean;
+};
+
+type ImageIndexGroup = {
+  directoryPath: string;
+  images: ImageIndexItem[];
+};
+
+type ImageIndexProgress = {
+  phase: "starting" | "processing" | "completed" | "error";
+  currentPath?: string;
+  completed: number;
+  total: number;
+  added: number;
+  removed: number;
+  unchanged: number;
+  message?: string;
+};
+
 type ElectronBridge = {
   clipboard: {
     copyWebImage: (url: string) => Promise<CopyWebImageResult>;
@@ -41,6 +64,9 @@ type ElectronBridge = {
   openDirectory: () => Promise<string[]>;
   scanDir: (dirPath: string) => Promise<string[]>;
   checkDir: (dirPath: string) => Promise<boolean>;
+  scanImageIndexGroups: (rootPath: string) => Promise<ImageIndexGroup[]>;
+  applyImageIndexSelection: (payload: { rootPath: string; selectedPaths: string[] }) => Promise<{ added: number; removed: number; unchanged: number }>;
+  onImageIndexProgress: (callback: (progress: ImageIndexProgress) => void) => () => void;
   getData: <T = unknown>(key: string) => Promise<T>;
   setData: (key: string, data: unknown) => Promise<void>;
   refresh: () => void;

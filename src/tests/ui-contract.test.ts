@@ -15,6 +15,9 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /\.img-item\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
   assert.match(html, /<p id="ai-status" class="ai-status">/);
   assert.match(html, /<script src="\.\/dist\/ai-chat\.js"><\/script>/);
+  assert.match(html, /id="add-embedding"/);
+  assert.match(html, /id="embedding-index-dialog"/);
+  assert.match(html, /id="embedding-index-progress"/);
   assert.equal((html.match(/<div class="img-item">/g) || []).length, 12, "图片展示槽位应为 12 个");
 
   const domSource = fs.readFileSync(path.resolve(process.cwd(), "src/dom.ts"), "utf8");
@@ -25,4 +28,6 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   const preloadSource = fs.readFileSync(path.resolve(process.cwd(), "src/preload.ts"), "utf8");
   assert.match(preloadSource, /local: \{[^}]*pageSize: 8/);
   assert.match(preloadSource, /rir: \{[^}]*pageSize: 12/);
+  assert.match(preloadSource, /scanImageIndexGroups/);
+  assert.match(preloadSource, /applyImageIndexSelection/);
 });

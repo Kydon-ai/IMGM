@@ -8,6 +8,8 @@ import path from "path";
 import { promisify } from "util";
 import sharp from "sharp";
 import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
+import { applyImageIndexSelection, ImageIndexProgress, scanImageIndexGroups } from "./ai/image-indexer";
+import { getAiConfig } from "./ai/config";
 
 const execFileAsync = promisify(execFile);
 const store = new Store();
@@ -32,6 +34,7 @@ if (platform === "linux") {
 
 let win: BrowserWindow | null = null;
 let modalWindow: BrowserWindow | null = null;
+let imageIndexTask: Promise<{ added: number; removed: number; unchanged: number }> | null = null;
 
 type ModalFilePayload = {
   originPath: string;
@@ -214,6 +217,47 @@ async function writeAnimatedImageFileToClipboard(imageBuffer: Buffer, format?: s
 }
 
 function IPCRegister(currentWin: BrowserWindow): void {
+  ipcMain.handle("scanImageIndexGroups", async (_event, rawRootPath: unknown) => {
+    if (typeof rawRootPath !== "string" || !rawRootPath.trim()) {
+      throw new Error("请先选择有效的图片目录");
+    }
+    return scanImageIndexGroups(rawRootPath, getAiConfig().imageDbPath);
+  });
+
+  ipcMain.handle("applyImageIndexSelection", async (_event, rawPayload: unknown) => {
+    if (imageIndexTask) {
+      throw new Error("已有图片索引任务正在执行，请等待完成");
+    }
+    const payload = rawPayload as { rootPath?: unknown; selectedPaths?: unknown } | null;
+    if (!payload || typeof payload.rootPath !== "string" || !Array.isArray(payload.selectedPaths)
+      || !payload.selectedPaths.every((item) => typeof item === "string")) {
+      throw new Error("图片索引任务参数不正确");
+    }
+
+    const emit = (progress: ImageIndexProgress): void => {
+      currentWin.webContents.send("imageIndexProgress", progress);
+    };
+    imageIndexTask = applyImageIndexSelection({
+      rootPath: payload.rootPath,
+      databasePath: getAiConfig().imageDbPath,
+      selectedPaths: payload.selectedPaths as string[],
+      onProgress: emit,
+    });
+    try {
+      const result = await imageIndexTask;
+      // The chat runtime keeps a SQLite connection. Reopen it after a write so
+      // the next question always observes this task's committed index.
+      await closeAiRuntime();
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      emit({ phase: "error", completed: 0, total: 0, added: 0, removed: 0, unchanged: 0, message });
+      throw error;
+    } finally {
+      imageIndexTask = null;
+    }
+  });
+
   ipcMain.handle("copyRirImage", async (_event, rawUrl: unknown) => {
     try {
       if (typeof rawUrl !== "string" || !rawUrl.trim()) {

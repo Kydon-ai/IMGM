@@ -5,6 +5,29 @@ const GALLERY_STORAGE = {
   rir: { targetList: "rirTargetList", imageList: "rirImgList", page: "rirPage", pageSize: 12 },
 } as const;
 
+type ImageIndexItem = {
+  filePath: string;
+  fileName: string;
+  fileUrl: string;
+  indexed: boolean;
+};
+
+type ImageIndexGroup = {
+  directoryPath: string;
+  images: ImageIndexItem[];
+};
+
+type ImageIndexProgress = {
+  phase: "starting" | "processing" | "completed" | "error";
+  currentPath?: string;
+  completed: number;
+  total: number;
+  added: number;
+  removed: number;
+  unchanged: number;
+  message?: string;
+};
+
 /** 获取当前图片列表所属模块，缺省时使用本地图片库。 */
 async function getCurrentGalleryMode(): Promise<GalleryMode> {
   const mode = await window.electron.getData<string>("mode");
@@ -37,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindRenameActions();
   bindSidebarNavigation();
   bindSettingsPopover();
+  bindEmbeddingIndex();
 
   await window.electron.refresh();
   await updatePagination();
@@ -160,6 +184,154 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
+/** 管理指定目录的图片向量索引；默认仅勾选已在数据库中的图片。 */
+function bindEmbeddingIndex(): void {
+  const openButton = getElementByIdOrThrow<HTMLButtonElement>("add-embedding");
+  const dialog = getElementByIdOrThrow<HTMLDivElement>("embedding-index-dialog");
+  const groupsContainer = getElementByIdOrThrow<HTMLDivElement>("embedding-index-groups");
+  const title = getElementByIdOrThrow<HTMLElement>("embedding-index-path");
+  const summary = getElementByIdOrThrow<HTMLElement>("embedding-index-summary");
+  const applyButton = getElementByIdOrThrow<HTMLButtonElement>("embedding-index-apply");
+  const cancelButton = getElementByIdOrThrow<HTMLButtonElement>("embedding-index-cancel");
+  const progressCard = getElementByIdOrThrow<HTMLElement>("embedding-index-progress");
+  const progressBar = getElementByIdOrThrow<HTMLProgressElement>("embedding-index-progress-bar");
+  const progressTitle = getElementByIdOrThrow<HTMLElement>("embedding-index-progress-title");
+  const progressFile = getElementByIdOrThrow<HTMLElement>("embedding-index-progress-file");
+  let rootPath = "";
+  let groups: ImageIndexGroup[] = [];
+  let selected = new Set<string>();
+
+  const updateSummary = (): void => {
+    const total = groups.reduce((count, group) => count + group.images.length, 0);
+    summary.textContent = `已选择 ${selected.size} / ${total} 张图片（已索引图片默认勾选）`;
+  };
+  const updateGroupCheckboxes = (): void => {
+    groupsContainer.querySelectorAll<HTMLInputElement>("[data-index-group]").forEach((checkbox) => {
+      const group = groups[Number(checkbox.dataset.indexGroup)];
+      const count = group?.images.filter((item) => selected.has(item.filePath)).length || 0;
+      checkbox.checked = count > 0 && count === (group?.images.length || 0);
+      checkbox.indeterminate = count > 0 && count < (group?.images.length || 0);
+    });
+    groupsContainer.querySelectorAll<HTMLInputElement>("[data-index-file]").forEach((checkbox) => {
+      checkbox.checked = selected.has(checkbox.dataset.indexFile || "");
+    });
+    updateSummary();
+  };
+  const renderGroups = (): void => {
+    groupsContainer.replaceChildren();
+    groups.forEach((group, groupIndex) => {
+      const section = document.createElement("section");
+      section.className = "embedding-index-group";
+      const header = document.createElement("div");
+      header.className = "embedding-index-group-header";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.indexGroup = String(groupIndex);
+      checkbox.setAttribute("aria-label", `选择目录 ${group.directoryPath} 中的全部图片`);
+      checkbox.addEventListener("change", () => {
+        group.images.forEach((item) => checkbox.checked ? selected.add(item.filePath) : selected.delete(item.filePath));
+        updateGroupCheckboxes();
+      });
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "embedding-index-group-toggle";
+      toggle.setAttribute("aria-expanded", "false");
+      const label = document.createElement("span");
+      label.textContent = `${group.directoryPath}（${group.images.length} 张）`;
+      toggle.append("›", label);
+      const items = document.createElement("div");
+      items.className = "embedding-index-items";
+      items.hidden = true;
+      toggle.addEventListener("click", () => {
+        const opening = items.hidden;
+        items.hidden = !opening;
+        toggle.setAttribute("aria-expanded", String(opening));
+      });
+      header.append(checkbox, toggle);
+      group.images.forEach((item) => {
+        const row = document.createElement("label");
+        row.className = "embedding-index-item";
+        const fileCheckbox = document.createElement("input");
+        fileCheckbox.type = "checkbox";
+        fileCheckbox.dataset.indexFile = item.filePath;
+        fileCheckbox.checked = selected.has(item.filePath);
+        fileCheckbox.addEventListener("change", () => {
+          fileCheckbox.checked ? selected.add(item.filePath) : selected.delete(item.filePath);
+          updateGroupCheckboxes();
+        });
+        const name = document.createElement("span");
+        name.className = "embedding-index-file-name";
+        name.textContent = item.fileName;
+        name.title = item.filePath;
+        const preview = document.createElement("img");
+        preview.className = "embedding-index-preview";
+        preview.src = item.fileUrl;
+        preview.alt = item.fileName;
+        preview.addEventListener("error", () => { preview.src = "./public/img/404.png"; });
+        row.append(fileCheckbox, name, preview);
+        items.append(row);
+      });
+      section.append(header, items);
+      groupsContainer.append(section);
+    });
+    updateGroupCheckboxes();
+  };
+  const closeDialog = (): void => { dialog.hidden = true; };
+  const showProgress = (progress: ImageIndexProgress): void => {
+    progressCard.hidden = false;
+    const percent = progress.total === 0 ? (progress.phase === "completed" ? 100 : 0) : Math.round((progress.completed / progress.total) * 100);
+    progressBar.value = percent;
+    progressTitle.textContent = `${progress.message || "正在处理图片索引"} · ${progress.completed}/${progress.total}`;
+    progressFile.textContent = progress.currentPath || "";
+    progressCard.classList.toggle("is-error", progress.phase === "error");
+  };
+
+  window.electron.onImageIndexProgress(showProgress);
+  openButton.addEventListener("click", async () => {
+    const pathElement = getElementByIdOrThrow<HTMLElement>("file-path");
+    rootPath = pathElement.textContent?.trim() || "";
+    if (!rootPath || !(await window.electron.checkDir(rootPath))) {
+      window.electron.showMessage("error", "请先选择有效的图片目录");
+      return;
+    }
+    dialog.hidden = false;
+    title.textContent = rootPath;
+    summary.textContent = "正在扫描图片…";
+    groupsContainer.replaceChildren();
+    applyButton.disabled = true;
+    try {
+      groups = await window.electron.scanImageIndexGroups(rootPath);
+      selected = new Set(groups.flatMap((group) => group.images.filter((item) => item.indexed).map((item) => item.filePath)));
+      renderGroups();
+      applyButton.disabled = false;
+      if (groups.length === 0) {
+        summary.textContent = "该路径下未发现支持的图片文件";
+      }
+    } catch (error) {
+      groups = [];
+      summary.textContent = error instanceof Error ? error.message : String(error);
+      window.electron.showMessage("error", "扫描图片目录失败");
+    }
+  });
+  cancelButton.addEventListener("click", closeDialog);
+  dialog.addEventListener("click", (event) => { if (event.target === dialog) closeDialog(); });
+  applyButton.addEventListener("click", async () => {
+    applyButton.disabled = true;
+    closeDialog();
+    showProgress({ phase: "starting", completed: 0, total: 0, added: 0, removed: 0, unchanged: 0, message: "图片索引任务已提交" });
+    try {
+      const result = await window.electron.applyImageIndexSelection({ rootPath, selectedPaths: [...selected] });
+      window.electron.showMessage("success", `索引完成：新增 ${result.added}，移除 ${result.removed}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showProgress({ phase: "error", completed: 0, total: 0, added: 0, removed: 0, unchanged: 0, message });
+      window.electron.showMessage("error", "图片索引失败");
+    } finally {
+      applyButton.disabled = false;
+    }
+  });
+}
 
 /** 绑定 QQ 风格侧栏导航，点击后滚动到对应功能区域。 */
 function bindSidebarNavigation(): void {
