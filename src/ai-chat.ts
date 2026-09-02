@@ -80,9 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     await Promise.all([
-      window.electron.setData("targetList", paths),
-      window.electron.setData("imgList", paths),
-      window.electron.setData("page", 1),
+      window.electron.setData("localTargetList", paths),
+      window.electron.setData("localImgList", paths),
+      window.electron.setData("localPage", 1),
       window.electron.setData("mode", "local"),
     ]);
     getAiElement<HTMLElement>("page-num").textContent = "1";

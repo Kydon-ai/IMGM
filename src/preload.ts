@@ -1,44 +1,24 @@
-import { clipboard, contextBridge, ipcRenderer, nativeImage } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 import { Notyf } from "notyf";
 
 type CopyWebImageResult = {
   success: boolean;
+  animated?: boolean;
+  clipboardMode?: "file" | "html" | "image";
   error?: string;
 };
+
+type GalleryMode = "local" | "rir";
+
+const GALLERY_STORAGE = {
+  local: { imageList: "localImgList", page: "localPage", pageSize: 8 },
+  rir: { imageList: "rirImgList", page: "rirPage", pageSize: 12 },
+} as const;
 
 contextBridge.exposeInMainWorld("electron", {
   clipboard: {
     copyWebImage: async (url: string): Promise<CopyWebImageResult> => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP错误: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            if (typeof reader.result === "string") {
-              resolve(reader.result);
-              return;
-            }
-            reject(new Error("图片读取失败"));
-          };
-          reader.onerror = () => reject(reader.error || new Error("图片读取失败"));
-          reader.readAsDataURL(blob);
-        });
-
-        const image = nativeImage.createFromDataURL(dataUrl);
-        clipboard.writeImage(image);
-
-        return { success: true };
-      } catch (error) {
-        const err = error as Error;
-        console.error("复制失败:", err);
-        return { success: false, error: err.message };
-      }
+      return ipcRenderer.invoke("copyRirImage", url);
     },
   },
   ipcRenderer: {
@@ -101,12 +81,19 @@ function showMessage(type: string, msg: string): void {
 
 /** 根据缓存页码刷新主图片区域。 */
 async function refreshPage(): Promise<void> {
-  const imgList = (await ipcRenderer.invoke("getData", "imgList")) as string[];
-  const currentPage = (await ipcRenderer.invoke("getData", "page")) as number;
+  const mode = await getGalleryMode();
+  const storage = GALLERY_STORAGE[mode];
+  const imgList = (await ipcRenderer.invoke("getData", storage.imageList)) as string[];
+  const currentPage = (await ipcRenderer.invoke("getData", storage.page)) as number;
 
-  const pageSize = 8;
-  const pageOfImages = getImageList(imgList || [], currentPage || 1, pageSize);
-  setImgUrl(pageOfImages);
+  const pageOfImages = getImageList(imgList || [], currentPage || 1, storage.pageSize);
+  setImgUrl(pageOfImages, mode, storage.pageSize);
+}
+
+/** 获取当前展示模块，缺省时使用本地图片库。 */
+async function getGalleryMode(): Promise<GalleryMode> {
+  const mode = await ipcRenderer.invoke("getData", "mode");
+  return mode === "rir" ? "rir" : "local";
 }
 
 /** 从完整图片列表中截取当前页数据。 */
@@ -122,22 +109,41 @@ function getImageList(imgList: string[], currentPage: number, pageSize: number):
   return pageOfImages;
 }
 
-/** 把当前页图片绑定到八个展示槽位。 */
-function setImgUrl(pageOfImages: string[]): void {
+/** 把当前页图片绑定到当前模块的展示槽位。 */
+function setImgUrl(pageOfImages: string[], mode: GalleryMode, pageSize: number): void {
+  const itemElements = document.querySelectorAll<HTMLElement>(".grid-img .img-item");
   const imgElements = document.querySelectorAll<HTMLImageElement>(".grid-img .img-item img");
+  const copyElements = document.querySelectorAll<HTMLButtonElement>(".grid-img .copy-btn");
   const renameElements = document.querySelectorAll<HTMLButtonElement>(".grid-img .rename-btn");
 
   for (let i = 0; i < imgElements.length; i += 1) {
+    const itemElement = itemElements[i];
+    const copyElement = copyElements[i];
     const renameElement = renameElements[i];
-    if (i < pageOfImages.length) {
+    const isVisibleSlot = i < pageSize;
+    if (itemElement) {
+      itemElement.hidden = !isVisibleSlot;
+    }
+
+    if (isVisibleSlot && i < pageOfImages.length) {
       imgElements[i].src = pageOfImages[i];
+      if (copyElement) {
+        copyElement.disabled = false;
+        copyElement.hidden = false;
+      }
       if (renameElement) {
-        renameElement.disabled = false;
+        renameElement.disabled = mode !== "local";
+        renameElement.hidden = mode !== "local";
       }
     } else {
       imgElements[i].src = "./public/img/404.png";
+      if (copyElement) {
+        copyElement.disabled = true;
+        copyElement.hidden = true;
+      }
       if (renameElement) {
         renameElement.disabled = true;
+        renameElement.hidden = true;
       }
     }
   }

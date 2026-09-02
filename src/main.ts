@@ -1,12 +1,25 @@
-import { app, BrowserWindow, ipcMain, dialog, Notification } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, net, Notification } from "electron";
+import { execFile } from "child_process";
+import crypto from "crypto";
 import Store from "electron-store";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { promisify } from "util";
+import sharp from "sharp";
 import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
 
+const execFileAsync = promisify(execFile);
 const store = new Store();
 const FORWARD_RENDERER_CONSOLE_KEY = "forwardRendererConsole";
+const LOCAL_TARGET_LIST_KEY = "localTargetList";
+const LOCAL_IMAGE_LIST_KEY = "localImgList";
+const RIR_TARGET_LIST_KEY = "rirTargetList";
+const RIR_IMAGE_LIST_KEY = "rirImgList";
+const LOCAL_PAGE_KEY = "localPage";
+const RIR_PAGE_KEY = "rirPage";
+const RIR_CLIPBOARD_DIRECTORY = "imgm-rir-clipboard";
+const RIR_CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 let forwardRendererConsole = store.get(FORWARD_RENDERER_CONSOLE_KEY, true);
 
 const platform = getCurrentPlatform();
@@ -29,9 +42,9 @@ type ModalFilePayload = {
 const createWindow = (): void => {
   win = new BrowserWindow({
     width: 1403,
-    height: 658,
+    height: 700,
     minWidth: 1403,
-    minHeight: 658,
+    minHeight: 700,
     frame: true,
     autoHideMenuBar: true,
     webPreferences: {
@@ -83,9 +96,30 @@ const createWindow = (): void => {
     store.set("page", 1);
   }
 
-  if (!store.get("targetList")) {
-    store.set("targetList", []);
-    store.set("imgList", []);
+  // 新版本将本地图片库和 RIR 资源分开保存；旧版本的共享列表迁移为本地列表。
+  if (!store.get(LOCAL_TARGET_LIST_KEY)) {
+    store.set(LOCAL_TARGET_LIST_KEY, store.get("targetList", []));
+    if (store.get("mode") === "rir") {
+      store.set("mode", "local");
+    }
+  }
+  if (!store.get(LOCAL_IMAGE_LIST_KEY)) {
+    store.set(LOCAL_IMAGE_LIST_KEY, store.get("imgList", []));
+  }
+  if (!store.get(RIR_TARGET_LIST_KEY)) {
+    store.set(RIR_TARGET_LIST_KEY, []);
+  }
+  if (!store.get(RIR_IMAGE_LIST_KEY)) {
+    store.set(RIR_IMAGE_LIST_KEY, []);
+  }
+  if (!store.get(LOCAL_PAGE_KEY)) {
+    store.set(LOCAL_PAGE_KEY, store.get("page", 1));
+  }
+  if (!store.get(RIR_PAGE_KEY)) {
+    store.set(RIR_PAGE_KEY, 1);
+  }
+  if (!store.get("mode")) {
+    store.set("mode", "local");
   }
 
   if (!store.get("scanPath")) {
@@ -97,7 +131,160 @@ const createWindow = (): void => {
 };
 
 /** 注册主窗口所需的文件、缓存与重命名 IPC。 */
+function getAnimatedImageExtension(format?: string): string | null {
+  switch (format) {
+    case "gif":
+      return ".gif";
+    case "webp":
+      return ".webp";
+    case "apng":
+      return ".png";
+    default:
+      return null;
+  }
+}
+
+async function setWindowsFileClipboard(filePath: string): Promise<void> {
+  if (process.platform !== "win32") {
+    throw new Error("Animated file clipboard is only supported on Windows");
+  }
+
+  const powershellPath = process.env.SystemRoot
+    ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+    : "powershell.exe";
+  const command = [
+    "$ErrorActionPreference = 'Stop'",
+    "Add-Type -AssemblyName System.Windows.Forms",
+    "$paths = New-Object System.Collections.Specialized.StringCollection",
+    "[void]$paths.Add($env:IMGM_CLIPBOARD_FILE)",
+    "[System.Windows.Forms.Clipboard]::SetFileDropList($paths)",
+  ].join("; ");
+
+  try {
+    await execFileAsync(
+      powershellPath,
+      ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-Command", command],
+      {
+        env: { ...process.env, IMGM_CLIPBOARD_FILE: filePath },
+        timeout: 15000,
+        windowsHide: true,
+      },
+    );
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Windows file clipboard failed: ${detail}`);
+  }
+}
+
+async function cleanupRirClipboardFiles(directory: string, keepFile: string): Promise<void> {
+  const cutoff = Date.now() - RIR_CLIPBOARD_FILE_MAX_AGE_MS;
+  const entries = await fs.promises.readdir(directory, { withFileTypes: true });
+  await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => {
+    const filePath = path.join(directory, entry.name);
+    if (filePath === keepFile) {
+      return;
+    }
+
+    const stats = await fs.promises.stat(filePath);
+    if (stats.mtimeMs < cutoff) {
+      await fs.promises.rm(filePath, { force: true });
+    }
+  }));
+}
+
+async function writeAnimatedImageFileToClipboard(imageBuffer: Buffer, format?: string): Promise<void> {
+  const extension = getAnimatedImageExtension(format);
+  if (!extension) {
+    throw new Error(`Unsupported animated image format: ${format || "unknown"}`);
+  }
+
+  const directory = path.join(app.getPath("temp"), RIR_CLIPBOARD_DIRECTORY);
+  await fs.promises.mkdir(directory, { recursive: true });
+  const filePath = path.join(directory, `rir-${Date.now()}-${crypto.randomUUID()}${extension}`);
+  await fs.promises.writeFile(filePath, imageBuffer);
+
+  try {
+    await setWindowsFileClipboard(filePath);
+  } catch (error) {
+    await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+    throw error;
+  }
+
+  void cleanupRirClipboardFiles(directory, filePath).catch(() => undefined);
+}
+
 function IPCRegister(currentWin: BrowserWindow): void {
+  ipcMain.handle("copyRirImage", async (_event, rawUrl: unknown) => {
+    try {
+      if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+        throw new Error("远程图片地址为空");
+      }
+
+      const imageUrl = new URL(rawUrl);
+      if (imageUrl.protocol !== "http:" && imageUrl.protocol !== "https:") {
+        throw new Error("只支持 HTTP 或 HTTPS 图片地址");
+      }
+
+      const response = await net.fetch(imageUrl.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP错误: ${response.status}`);
+      }
+
+      const imageBuffer = Buffer.from(await response.arrayBuffer());
+      if (imageBuffer.length === 0) {
+        throw new Error("远程图片内容为空");
+      }
+
+      // nativeImage 对部分 GIF/WebP 以及动图的原始解码并不稳定。
+      // 先用 sharp 解码并固定为第一帧 PNG，剪贴板本身也只能保存静态图片。
+      let pngBuffer: Buffer;
+      let sourceFormat: string | undefined;
+      let frameCount = 1;
+      try {
+        const sourceImage = sharp(imageBuffer, { animated: false, failOn: "none" });
+        const metadata = await sourceImage.metadata();
+        sourceFormat = metadata.format;
+        frameCount = metadata.pages || 1;
+        pngBuffer = await sourceImage.rotate().png().toBuffer();
+      } catch (decodeError) {
+        const contentType = response.headers.get("content-type") || "未知类型";
+        const detail = decodeError instanceof Error ? decodeError.message : String(decodeError);
+        throw new Error(`远程图片解码失败（${contentType}，${imageBuffer.length} 字节）：${detail}`);
+      }
+
+      const image = nativeImage.createFromBuffer(pngBuffer);
+      if (image.isEmpty()) {
+        throw new Error("远程图片解码失败，无法写入剪贴板");
+      }
+
+      if (frameCount > 1 && process.platform === "win32") {
+        await writeAnimatedImageFileToClipboard(imageBuffer, sourceFormat);
+        return { success: true, animated: true, clipboardMode: "file" };
+      }
+
+      if (frameCount > 1) {
+        // 图片剪贴板通常只接受位图；同时写入内联 HTML，让支持富文本的目标应用保留动图。
+        const contentType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+        const mimeType = contentType?.startsWith("image/")
+          ? contentType
+          : ({ gif: "image/gif", webp: "image/webp", apng: "image/apng" } as Record<string, string>)[sourceFormat || ""] || "image/gif";
+        const dataUrl = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
+        clipboard.write({
+          image,
+          html: `<img src="${dataUrl}" alt="RIR image" />`,
+        });
+      } else {
+        clipboard.writeImage(image);
+      }
+
+      return { success: true, animated: frameCount > 1, clipboardMode: frameCount > 1 ? "html" : "image" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("复制远程图片失败:", message);
+      return { success: false, error: message };
+    }
+  });
+
   ipcMain.handle("openDirectory", async () => {
     const result = await dialog.showOpenDialog(currentWin, {
       properties: ["openDirectory", "multiSelections"],
@@ -112,8 +299,9 @@ function IPCRegister(currentWin: BrowserWindow): void {
 
   ipcMain.handle("scanDir", (_event, dirPath: string) => {
     const imgList = scanImagesInDirectory(dirPath);
-    store.set("targetList", imgList);
-    store.set("imgList", imgList);
+    store.set(LOCAL_TARGET_LIST_KEY, imgList);
+    store.set(LOCAL_IMAGE_LIST_KEY, imgList);
+    store.set(LOCAL_PAGE_KEY, 1);
     return imgList;
   });
 
@@ -169,19 +357,24 @@ function IPCRegister(currentWin: BrowserWindow): void {
   });
 
   ipcMain.on("modalToOther", (_event, filePayload: ModalFilePayload) => {
-    const imgList = (store.get("targetList") as string[]) || [];
-    filePayload.originPath = convertFileUrlToPath(filePayload.originPath);
-
-    for (let i = 0; i < imgList.length; i += 1) {
-      if (imgList[i] === filePayload.originPath) {
-        const targetList = imgList[i].split("/");
-        targetList[targetList.length - 1] = filePayload.changeName;
-        imgList[i] = targetList.join("/");
-        break;
-      }
+    if (store.get("mode", "local") !== "local") {
+      return;
     }
 
-    store.set("imgList", imgList);
+    const targetList = (store.get(LOCAL_TARGET_LIST_KEY) as string[]) || [];
+    const imageList = (store.get(LOCAL_IMAGE_LIST_KEY) as string[]) || [];
+    filePayload.originPath = convertFileUrlToPath(filePayload.originPath);
+
+    const renamedPath = path.join(path.dirname(filePayload.originPath), filePayload.changeName);
+    const replacePath = (items: string[]): string[] => items.map((item) => item === filePayload.originPath ? renamedPath : item);
+    const renamedTargetList = replacePath(targetList);
+    const renamedImageList = replacePath(imageList);
+
+    if (renamedTargetList.some((item, index) => item !== targetList[index])) {
+      store.set(LOCAL_TARGET_LIST_KEY, renamedTargetList);
+      store.set(LOCAL_IMAGE_LIST_KEY, renamedImageList);
+    }
+
     rename(filePayload.originPath, filePayload.changeFileName);
 
     if (win) {

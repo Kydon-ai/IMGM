@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file: https:; connect-src 'self' https:; font-src 'self' data:;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.qidong.tech:5173; style-src 'self' 'unsafe-inline'; img-src 'self' data: file: https:; connect-src 'self' https:; font-src 'self' data:;" />
     <title>图片检索工具</title>
     <style>
         html,
@@ -153,6 +153,10 @@
             display: flex; /* 新增 */
             flex-direction: column; /* 新增 */
 			border: 1px solid #ddd; /* 新增 - 边框 */
+        }
+
+        .img-item[hidden] {
+            display: none !important;
         }
 
         .img-item:hover {
@@ -542,6 +546,66 @@
             grid-template-columns: minmax(750px, 1fr);
         }
 
+        /* RIR 没有右侧 AI 面板，使用更紧凑的两行网格，避免主区域纵向溢出。 */
+        .app-shell.rir-mode .grid-img {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .app-shell.rir-mode .img-item {
+            aspect-ratio: 1 / 0.78;
+        }
+
+        /* 让图片区域占用工具栏和分页器之外的剩余高度。 */
+        .image-browser {
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .browser-section[data-page-section].active {
+            display: block;
+            flex: 0 0 auto;
+        }
+
+        .image-container {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .grid-img {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .pagination {
+            flex: 0 0 auto;
+        }
+
+        /* RIR 一页保持两行，卡片高度由容器剩余空间决定。 */
+        .app-shell.rir-mode .image-browser {
+            overflow-y: hidden;
+        }
+
+        .app-shell.rir-mode .image-container {
+            min-height: 0;
+            margin-bottom: 0;
+            overflow: hidden;
+        }
+
+        .app-shell.rir-mode .grid-img {
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+        }
+
+        .app-shell.rir-mode .img-item {
+            min-height: 0;
+            height: 100%;
+            aspect-ratio: auto;
+        }
+
         .image-browser {
             min-width: 750px;
             min-height: 0;
@@ -730,6 +794,479 @@
             opacity: 0.55;
             cursor: wait;
         }
+
+        /* 视觉主题：柔和蓝色、轻灰蓝背景和更清晰的层级。 */
+        :root {
+            --imgm-blue: #5b7cfa;
+            --imgm-blue-dark: #4664d8;
+            --imgm-blue-soft: #eef2ff;
+            --imgm-bg: #f5f7fa;
+            --imgm-border: #e1e7f0;
+            --imgm-text: #25324a;
+            --imgm-muted: #78869f;
+        }
+
+        body {
+            color: var(--imgm-text);
+            background: var(--imgm-bg);
+        }
+
+        .app-shell {
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .imgm-sidebar {
+            flex-basis: 78px;
+            padding: 17px 10px 13px;
+            border-color: rgba(255, 255, 255, 0.45);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #5b7cfa 0%, #536cd8 58%, #4c5bbd 100%);
+            box-shadow: 0 10px 28px rgba(70, 94, 180, 0.2);
+        }
+
+        .imgm-nav {
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .imgm-nav-item,
+        .imgm-settings-button {
+            width: 58px;
+            min-height: 61px;
+            border-radius: 14px;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .imgm-nav-item:hover,
+        .imgm-settings-button:hover {
+            background: rgba(238, 242, 255, 0.2);
+            box-shadow: 0 5px 14px rgba(38, 59, 143, 0.12);
+        }
+
+        .imgm-nav-item.active {
+            color: #3855c5;
+            background: #eaf0ff;
+            box-shadow: 0 7px 16px rgba(32, 53, 137, 0.18);
+        }
+
+        .imgm-nav-item.active .imgm-nav-icon {
+            color: var(--imgm-blue-dark);
+            background: #d7e1ff;
+        }
+
+        .imgm-nav-icon {
+            background: rgba(255, 255, 255, 0.17);
+        }
+
+        .toolbar {
+            gap: 16px;
+            padding: 11px 13px;
+            border: 1px solid var(--imgm-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 2px 8px rgba(39, 58, 93, 0.06);
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            gap: 9px;
+        }
+
+        .toolbar-btn {
+            min-height: 36px;
+            padding: 8px 12px;
+            border-color: #dce3ef;
+            border-radius: 9px;
+            color: #47556e;
+            background: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .toolbar-btn:hover {
+            border-color: #c8d3e8;
+            color: var(--imgm-blue-dark);
+            background: #f8faff;
+            box-shadow: 0 3px 8px rgba(45, 73, 142, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .toolbar-btn.primary {
+            border-color: var(--imgm-blue);
+            color: #fff;
+            background: var(--imgm-blue);
+            box-shadow: 0 5px 12px rgba(91, 124, 250, 0.22);
+        }
+
+        .toolbar-btn.primary:hover {
+            border-color: var(--imgm-blue-dark);
+            color: #fff;
+            background: var(--imgm-blue-dark);
+            box-shadow: 0 6px 14px rgba(70, 100, 216, 0.26);
+        }
+
+        .toolbar-btn.ghost {
+            border-color: transparent;
+            color: #667695;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .toolbar-btn.ghost:hover {
+            border-color: #dce5fa;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+            box-shadow: none;
+        }
+
+        .path-controls {
+            border-color: var(--imgm-border);
+            border-radius: 9px;
+            background: #fff;
+        }
+
+        .path-controls .toolbar-btn {
+            border-color: transparent;
+        }
+
+        #search-input,
+        #rir-search-input,
+        #rir-parse-input {
+            order: 2;
+            width: 210px;
+            height: 36px;
+            padding: 8px 12px 8px 4px;
+            border: 0;
+            border-radius: 0 9px 9px 0;
+            color: var(--imgm-text);
+            background: transparent;
+            font-size: 13px;
+        }
+
+        #search-input::placeholder,
+        #rir-search-input::placeholder,
+        #rir-parse-input::placeholder {
+            color: #9aa6ba;
+        }
+
+        #search-input:focus,
+        #rir-search-input:focus,
+        #rir-parse-input:focus {
+            box-shadow: none;
+        }
+
+        .search-box {
+            min-height: 36px;
+            padding: 0 4px 0 9px;
+            border: 1px solid #dfe5ef;
+            border-radius: 9px;
+            background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: #aebef8;
+            box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.12);
+        }
+
+        .search-btn {
+            order: 1;
+            width: 26px;
+            height: 30px;
+            padding: 0;
+            border: 0;
+            border-radius: 7px;
+            color: #60708e;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .search-btn:hover {
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+        }
+
+        .url-style {
+            color: var(--imgm-blue-dark);
+        }
+
+        .image-container {
+            padding: 0 4px;
+            margin-bottom: 20px;
+        }
+
+        .grid-img {
+            gap: 18px;
+            padding: 2px;
+        }
+
+        .img-item {
+            border: 1px solid #e3e8f1;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .img-item:hover {
+            border-color: #ccd7f4;
+            transform: scale(1.02);
+            box-shadow: 0 10px 22px rgba(47, 65, 107, 0.14);
+        }
+
+        .copy-btn,
+        .rename-btn {
+            padding: 5px 9px;
+            border: 1px solid rgba(219, 226, 241, 0.9);
+            border-radius: 7px;
+            color: #42516c;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 3px 8px rgba(36, 54, 93, 0.12);
+        }
+
+        .copy-btn:hover,
+        .rename-btn:hover {
+            color: var(--imgm-blue-dark);
+            background: #fff;
+        }
+
+        .copy-btn:disabled,
+        .rename-btn:disabled {
+            pointer-events: none;
+        }
+
+        .pagination {
+            gap: 7px;
+            margin-top: 24px;
+        }
+
+        .pagination button {
+            min-width: 34px;
+            height: 31px;
+            padding: 5px 10px;
+            border: 1px solid #dfe5ef;
+            border-radius: 999px;
+            color: #687792;
+            background: #fff;
+            font-size: 12px;
+            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .pagination button:hover {
+            border-color: #c7d3f4;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+            transform: translateY(-1px);
+        }
+
+        .pagination-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 31px;
+            padding: 4px 9px;
+            border: 1px solid #e0e7f5;
+            border-radius: 999px;
+            color: #7c899f;
+            background: #f0f4ff;
+            font-size: 12px;
+        }
+
+        .page-current {
+            display: inline-grid;
+            place-items: center;
+            min-width: 23px;
+            height: 23px;
+            padding: 0 6px;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--imgm-blue);
+            box-shadow: 0 3px 7px rgba(91, 124, 250, 0.24);
+            font-weight: 700;
+        }
+
+        .ai-panel {
+            border-color: #e0e6f0;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 6px 22px rgba(36, 55, 88, 0.08);
+        }
+
+        .ai-panel-header {
+            padding: 14px 16px 11px;
+            color: var(--imgm-text);
+            background: #fff;
+            border-bottom: 1px solid #e7ebf3;
+        }
+
+        .ai-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .ai-title-wrap {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            gap: 8px;
+        }
+
+        .ai-brand-icon {
+            display: grid;
+            place-items: center;
+            width: 25px;
+            height: 25px;
+            border-radius: 8px;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+            font-size: 16px;
+        }
+
+        .ai-panel-header h2 {
+            margin: 0;
+            overflow: hidden;
+            color: var(--imgm-text);
+            font-size: 16px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ai-online {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            color: #24966a;
+            background: #e1f8ed;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .ai-online::before {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #25c886;
+            content: "";
+        }
+
+        .ai-status {
+            min-height: 16px;
+            margin: 6px 0 0 33px;
+            color: #8a96aa;
+            font-size: 11px;
+        }
+
+        .ai-messages {
+            padding: 14px 13px;
+            background: #fff;
+        }
+
+        .ai-message {
+            max-width: 90%;
+            margin-bottom: 12px;
+            padding: 9px 11px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .ai-message.assistant {
+            border: 1px solid var(--imgm-blue);
+            border-left: 4px solid var(--imgm-blue);
+            border-bottom-left-radius: 12px;
+            color: #35445e;
+            background: #fff;
+        }
+
+        .ai-message.user {
+            border: 1px solid #e5eaf2;
+            border-bottom-right-radius: 12px;
+            color: #34435c;
+            background: #eef2f7;
+        }
+
+        .ai-suggestions {
+            padding: 0 13px 10px;
+            background: #fff;
+        }
+
+        .ai-suggestion {
+            border-color: #d9e2fb;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+        }
+
+        .ai-results-section {
+            padding: 10px 13px;
+            border-top-color: #e7ebf2;
+            background: #fff;
+        }
+
+        .ai-results-heading {
+            color: #7b879b;
+        }
+
+        .ai-result-card {
+            border-color: #e1e7f1;
+            border-radius: 9px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .ai-result-card:hover {
+            border-color: #c7d4fa;
+            transform: scale(1.02);
+            box-shadow: 0 5px 12px rgba(45, 65, 110, 0.12);
+        }
+
+        .ai-show-gallery {
+            border-color: #cfdbfb;
+            border-radius: 999px;
+            color: var(--imgm-blue-dark);
+            background: var(--imgm-blue-soft);
+        }
+
+        .ai-composer {
+            gap: 8px;
+            padding: 11px 13px 13px;
+            border-top-color: #e7ebf2;
+            background: #fff;
+        }
+
+        .ai-composer textarea {
+            min-height: 42px;
+            padding: 9px 10px;
+            border-color: #dfe5ef;
+            border-radius: 10px;
+            color: var(--imgm-text);
+            background: #fbfcfe;
+        }
+
+        .ai-composer textarea:focus {
+            border-color: #aebef8;
+            box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.12);
+            background: #fff;
+        }
+
+        .ai-send {
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 9px;
+            background: var(--imgm-blue);
+            box-shadow: 0 4px 10px rgba(91, 124, 250, 0.2);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ai-send:hover:not(:disabled) {
+            background: var(--imgm-blue-dark);
+        }
     </style>
 </head>
 <body>
@@ -746,10 +1283,10 @@
                 <span class="imgm-nav-icon" aria-hidden="true">↗</span>
                 <span class="imgm-nav-label">远程 RIR</span>
             </button>
-            <button class="imgm-nav-item" type="button" data-target="ai-panel" aria-controls="ai-panel">
+            <!-- <button class="imgm-nav-item" type="button" data-target="ai-panel" aria-controls="ai-panel">
                 <span class="imgm-nav-icon" aria-hidden="true">✦</span>
                 <span class="imgm-nav-label">AI 助手</span>
-            </button>
+            </button> -->
         </nav>
         <div class="imgm-sidebar-divider"></div>
         <button id="settings-button" class="imgm-settings-button" type="button" aria-expanded="false" aria-controls="settings-popover">
@@ -799,12 +1336,12 @@
             
             <div class="action-buttons">
                 <button id="start-search" class="toolbar-btn primary">
-                    <span class="icon">🔍</span> 开始搜索
+                    <span class="icon">🔍</span> 开始搜图
                 </button>
-                <button id="refresh-pic" class="toolbar-btn">
+                <button id="refresh-pic" class="toolbar-btn ghost">
                     <span class="icon">🔄</span> 刷新
                 </button>
-                <button id="check-cache" class="toolbar-btn">
+                <button id="check-cache" class="toolbar-btn ghost">
                     <span class="icon">🗃️</span> 缓存
                 </button>
             </div>
@@ -831,9 +1368,9 @@
 					<span class="icon">🔍</span>
 				</button>
 			</div>
-			<button id="rir-refresh-pic" class="toolbar-btn">
-				<span class="icon">🔄</span> 刷新
-			</button>
+            <button id="rir-refresh-pic" class="toolbar-btn ghost">
+                <span class="icon">🔄</span> 刷新
+            </button>
 		</div>
 		<div class="toolbar-right">
             <div class="search-box">
@@ -851,50 +1388,70 @@
         <div class="grid-img">
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
             <div class="img-item">
                 <img src="./public/img/404.png" alt="图片丢失了">
-                <button class="copy-btn">复制</button>
-                <button class="rename-btn">改标签</button>
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
+            </div>
+            <div class="img-item">
+                <img src="./public/img/404.png" alt="图片丢失了">
+                <button class="copy-btn" disabled hidden>复制</button>
+                <button class="rename-btn" disabled hidden>改标签</button>
             </div>
         </div>
 
         <!-- 分页控件 -->
         <div class="pagination">
             <button id="forward">&lt; 上一页</button>
-            <span class="pagination-info">第 <span id="page-num">1</span> / <span id="all-page-num">1</span>  页</span>
+            <span class="pagination-info">第 <span id="page-num" class="page-current">1</span> / <span id="all-page-num">1</span> 页</span>
             <button id="backward">下一页 &gt;</button>
         </div>
     </div>
@@ -902,8 +1459,14 @@
     </main>
     <aside class="ai-panel" id="ai-panel" aria-label="AI 图片问答">
         <header class="ai-panel-header">
-            <h2>AI 图片助手</h2>
-            <p id="ai-status" class="ai-status">Milvus · LangGraph · DeepSeek</p>
+            <div class="ai-header-top">
+                <div class="ai-title-wrap">
+                    <span class="ai-brand-icon" aria-hidden="true">▣</span>
+                    <h2>AI图片助手</h2>
+                </div>
+                <span class="ai-online">在线</span>
+            </div>
+            <p id="ai-status" class="ai-status">AI 已就绪</p>
         </header>
         <div id="ai-messages" class="ai-messages" aria-live="polite">
             <div class="ai-message assistant">告诉我你想找什么图片。例如：“找 8 张透明背景的咖波表情包”。</div>

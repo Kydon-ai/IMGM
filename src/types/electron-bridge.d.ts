@@ -1,5 +1,7 @@
 type CopyWebImageResult = {
   success: boolean;
+  animated?: boolean;
+  clipboardMode?: "file" | "html" | "image";
   error?: string;
 };
 

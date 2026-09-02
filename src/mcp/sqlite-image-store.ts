@@ -54,6 +54,39 @@ const DEFAULT_VECTOR_WEIGHTS = {
   vector: 0.05,
 };
 
+/** 创建图片检索所需的最小 SQLite 结构。 */
+function createImageSchema(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS images (
+      id INTEGER PRIMARY KEY,
+      original_filename TEXT NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      image_path TEXT NOT NULL,
+      embedding BLOB NOT NULL,
+      image_embedding BLOB,
+      name_embedding BLOB
+    );
+    CREATE INDEX IF NOT EXISTS idx_images_path ON images(image_path);
+    CREATE INDEX IF NOT EXISTS idx_images_category ON images(category);
+  `);
+}
+
+/** 首次使用时创建空数据库；已有数据库不会被覆盖。 */
+function ensureImageDatabase(databasePath: string): void {
+  if (fs.existsSync(databasePath)) {
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  const database = new Database(databasePath);
+  try {
+    createImageSchema(database);
+  } finally {
+    database.close();
+  }
+}
+
 function bufferToVector(buffer: Buffer | null): number[] {
   if (!buffer || buffer.byteLength === 0) {
     return [];
@@ -153,9 +186,7 @@ export class SqliteImageStore {
 
   constructor(config: SqliteImageStoreConfig) {
     this.databasePath = path.resolve(config.databasePath);
-    if (!fs.existsSync(this.databasePath)) {
-      throw new Error(`SQLite 数据库不存在：${this.databasePath}。请设置 IMAGE_DB_PATH 指向参考项目的 data/app.db。`);
-    }
+    ensureImageDatabase(this.databasePath);
 
     this.db = new Database(this.databasePath, { readonly: true, fileMustExist: true });
     const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'images'").all();

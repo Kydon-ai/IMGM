@@ -1,4 +1,32 @@
-const PAGE_SIZE = 8;
+type GalleryMode = "local" | "rir";
+
+const GALLERY_STORAGE = {
+  local: { targetList: "localTargetList", imageList: "localImgList", page: "localPage", pageSize: 8 },
+  rir: { targetList: "rirTargetList", imageList: "rirImgList", page: "rirPage", pageSize: 12 },
+} as const;
+
+/** 获取当前图片列表所属模块，缺省时使用本地图片库。 */
+async function getCurrentGalleryMode(): Promise<GalleryMode> {
+  const mode = await window.electron.getData<string>("mode");
+  return mode === "rir" ? "rir" : "local";
+}
+
+/** 更新当前模块的分页信息。 */
+async function updatePagination(mode?: GalleryMode): Promise<void> {
+  const activeMode = mode || (await getCurrentGalleryMode());
+  const storage = GALLERY_STORAGE[activeMode];
+  const page = (await window.electron.getData<number>(storage.page)) || 1;
+  const imageList = (await window.electron.getData<string[]>(storage.imageList)) || [];
+  getElementByIdOrThrow<HTMLElement>("page-num").textContent = String(page);
+  getElementByIdOrThrow<HTMLElement>("all-page-num").textContent = String(getMaxPage(imageList, storage.pageSize));
+}
+
+/** 切换当前展示模块，并刷新该模块自己的图片列表和分页。 */
+async function switchGalleryMode(mode: GalleryMode): Promise<void> {
+  await window.electron.setData("mode", mode);
+  await updatePagination(mode);
+  await window.electron.refresh();
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   window.electron.ipcRenderer.on("modalData", () => {
@@ -11,6 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindSettingsPopover();
 
   await window.electron.refresh();
+  await updatePagination();
 
   const filePathElement = getElementByIdOrThrow<HTMLElement>("file-path");
   const historyPath = await window.electron.getData<string>("scanPath");
@@ -37,8 +66,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (filePath && (await window.electron.checkDir(filePath))) {
       await window.electron.scanDir(filePath);
-      window.electron.showMessage("success", "搜索完毕!!!");
       await window.electron.setData("mode", "local");
+      await updatePagination("local");
+      window.electron.showMessage("success", "搜索完毕!!!");
+      await window.electron.refresh();
     } else {
       alert("文件路径为空或者无效");
     }
@@ -53,21 +84,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("forward").addEventListener("click", async () => {
-    let page = await window.electron.getData<number>("page");
+    const mode = await getCurrentGalleryMode();
+    const storage = GALLERY_STORAGE[mode];
+    let page = await window.electron.getData<number>(storage.page);
     page = Math.max((page || 1) - 1, 1);
 
-    await window.electron.setData("page", page);
+    await window.electron.setData(storage.page, page);
     await window.electron.refresh();
     getElementByIdOrThrow<HTMLElement>("page-num").textContent = String(page);
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("backward").addEventListener("click", async () => {
-    let page = (await window.electron.getData<number>("page")) || 1;
-    const list = (await window.electron.getData<string[]>("imgList")) || [];
-    const maxPage = getMaxPage(list);
+    const mode = await getCurrentGalleryMode();
+    const storage = GALLERY_STORAGE[mode];
+    let page = (await window.electron.getData<number>(storage.page)) || 1;
+    const list = (await window.electron.getData<string[]>(storage.imageList)) || [];
+    const maxPage = getMaxPage(list, storage.pageSize);
     page = Math.min(maxPage, page + 1);
 
-    await window.electron.setData("page", page);
+    await window.electron.setData(storage.page, page);
     await window.electron.refresh();
     getElementByIdOrThrow<HTMLElement>("page-num").textContent = String(page);
   });
@@ -79,21 +114,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   getElementByIdOrThrow<HTMLButtonElement>("search-button").addEventListener("click", async () => {
     const searchText = getElementByIdOrThrow<HTMLInputElement>("search-input").value;
-    const targetList = (await window.electron.getData<string[]>("targetList")) || [];
+    const targetList = (await window.electron.getData<string[]>(GALLERY_STORAGE.local.targetList)) || [];
     const imgList = filterPictures(targetList, searchText);
-    await window.electron.setData("imgList", imgList);
+    await window.electron.setData(GALLERY_STORAGE.local.imageList, imgList);
+    await window.electron.setData(GALLERY_STORAGE.local.page, 1);
+    await window.electron.setData("mode", "local");
 
-    getElementByIdOrThrow<HTMLElement>("all-page-num").textContent = String(getMaxPage(imgList));
+    await updatePagination("local");
     await window.electron.refresh();
   });
 
   getElementByIdOrThrow<HTMLButtonElement>("rir-search-button").addEventListener("click", async () => {
     const searchText = getElementByIdOrThrow<HTMLInputElement>("rir-search-input").value;
-    const targetList = (await window.electron.getData<string[]>("targetList")) || [];
+    const targetList = (await window.electron.getData<string[]>(GALLERY_STORAGE.rir.targetList)) || [];
     const imgList = filterPictures(targetList, searchText);
-    await window.electron.setData("imgList", imgList);
+    await window.electron.setData(GALLERY_STORAGE.rir.imageList, imgList);
+    await window.electron.setData(GALLERY_STORAGE.rir.page, 1);
+    await window.electron.setData("mode", "rir");
 
-    getElementByIdOrThrow<HTMLElement>("all-page-num").textContent = String(getMaxPage(imgList));
+    await updatePagination("rir");
     await window.electron.refresh();
   });
 
@@ -109,15 +148,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       result.list = result.list.map((element) => result.target + element);
-      await window.electron.setData("targetList", result.list);
-      await window.electron.setData("imgList", result.list);
-      await window.electron.refresh();
-
-      getElementByIdOrThrow<HTMLElement>("rir-file-path").textContent = result.target;
+      await window.electron.setData(GALLERY_STORAGE.rir.targetList, result.list);
+      await window.electron.setData(GALLERY_STORAGE.rir.imageList, result.list);
+      await window.electron.setData(GALLERY_STORAGE.rir.page, 1);
       await window.electron.setData("mode", "rir");
-
-      const maxPageList = (await window.electron.getData<string[]>("imgList")) || [];
-      getElementByIdOrThrow<HTMLElement>("all-page-num").textContent = String(getMaxPage(maxPageList));
+      getElementByIdOrThrow<HTMLElement>("rir-file-path").textContent = result.target;
+      await updatePagination("rir");
+      await window.electron.refresh();
     } catch (error) {
       console.error("Could not parse RIR file: ", error);
     }
@@ -145,6 +182,7 @@ function bindSidebarNavigation(): void {
         section.classList.toggle("active", section.id === pageTargetId);
       });
       appShell.classList.toggle("rir-mode", isRirPage);
+      void switchGalleryMode(isRirPage ? "rir" : "local");
 
       document.getElementById(isAiEntry ? "ai-panel" : pageTargetId)?.scrollIntoView({
         behavior: "smooth",
@@ -220,7 +258,12 @@ function bindCopyActions(): void {
           copyImage(img.src);
         } else if (mode === "rir") {
           const result = await window.electron.clipboard.copyWebImage(img.src);
-          window.electron.showMessage(result.success ? "success" : "error", `复制${result.success ? "成功" : "失败"}`);
+          window.electron.showMessage(
+            result.success ? "success" : "error",
+            result.success
+              ? result.clipboardMode === "file" ? "复制成功（动图文件已写入剪贴板）" : result.animated ? "复制成功（已附带动图数据）" : "复制成功"
+              : `复制失败：${result.error || "远程图片无法写入剪贴板"}`,
+          );
         } else {
           window.electron.showMessage("error", "未知模式，请先以任意一种方式获取图片列表！！");
         }
@@ -251,21 +294,19 @@ function bindRenameActions(): void {
 
 /** 重置分页并刷新图片列表。 */
 async function refreshAndResetPage(): Promise<void> {
-  await window.electron.setData("page", 1);
-  getElementByIdOrThrow<HTMLElement>("page-num").textContent = "1";
-
-  const maxPageList = (await window.electron.getData<string[]>("imgList")) || [];
-  getElementByIdOrThrow<HTMLElement>("all-page-num").textContent = String(getMaxPage(maxPageList));
+  const mode = await getCurrentGalleryMode();
+  await window.electron.setData(GALLERY_STORAGE[mode].page, 1);
+  await updatePagination(mode);
 
   await window.electron.refresh();
 }
 
-/** 计算八张一页时的最大页数。 */
-function getMaxPage(imgList: string[]): number {
+/** 根据当前模块的每页数量计算最大页数。 */
+function getMaxPage(imgList: string[], pageSize: number): number {
   if (!imgList || imgList.length === 0) {
     return 1;
   }
-  return Math.floor(imgList.length / PAGE_SIZE) + (imgList.length % PAGE_SIZE ? 1 : 0);
+  return Math.floor(imgList.length / pageSize) + (imgList.length % pageSize ? 1 : 0);
 }
 
 /** 获取必需 DOM 元素，不存在时立即抛错。 */
