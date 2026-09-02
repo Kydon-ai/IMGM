@@ -6,7 +6,7 @@ module.exports = {
   packagerConfig: {
     name: 'IMGM', // 应用名称
     asar: true, // 是否打包为asar
-    icon: './public/icon', // 图标路径
+    icon: './public/img/IMGM.ico', // 应用图标路径
     executableName: 'imgm', // 强制指定可执行文件名称（所有平台）
     // 排除开发数据、密钥、源码和测试，避免泄密并控制安装包体积。
     ignore,
@@ -15,7 +15,9 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        setupIcon: './public/img/IMGM.ico',
+      },
     },
     {
       name: '@electron-forge/maker-zip',

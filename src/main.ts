@@ -44,6 +44,7 @@ const createWindow = (): void => {
     height: 700,
     minWidth: 1403,
     minHeight: 700,
+    icon: path.join(__dirname, "../public/img/IMGM.ico"),
     frame: true,
     autoHideMenuBar: true,
     webPreferences: {
