@@ -7,7 +7,14 @@ import { ImageSearchHit, SearchIntent } from "../ai/types";
 class FakeModel implements RagChatModel {
   /** 返回固定检索意图。 */
   async completeJson<T>(): Promise<T> {
-    return { shouldSearch: true, query: "可爱的蓝色猫咪", category: "capoos", color: "蓝色" } as T;
+    return {
+      shouldSearch: true,
+      query: "可爱的蓝色猫咪",
+      category: "新增目录分类",
+      color: "蓝色",
+      animated: null,
+      transparent: null,
+    } as T;
   }
 
   /** 模拟两段流式回答。 */
@@ -48,7 +55,7 @@ test("LangGraph 工作流应先检索再流式回答", async () => {
     (event) => events.push(event.type)
   );
 
-  assert.equal(retriever.lastIntent?.category, "capoos");
+  assert.equal(retriever.lastIntent?.category, "新增目录分类");
   assert.equal(retriever.lastIntent?.color, "蓝色");
   assert.equal(retriever.lastIntent?.query, "可爱的蓝色猫咪");
   assert.equal(result.answer, "找到了");

@@ -75,7 +75,7 @@ function createServer(): McpServer {
       try {
         const input = args as SearchImagesArgs;
         const store = await getStore();
-        const hits = await store.search(input.query, input.limit ?? 8, input.category);
+        const hits = await store.search(input.query, input.limit ?? 8, { category: input.category });
         const payload: SearchImagesPayload = {
           query: input.query,
           mode: "hybrid",

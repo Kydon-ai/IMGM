@@ -9,6 +9,11 @@ export type SqliteImageStoreConfig = {
   databasePath: string;
 };
 
+export type SqliteSearchOptions = {
+  category?: string;
+  extraQuery?: string;
+};
+
 export type SqliteSearchScores = {
   name: number;
   image: number;
@@ -216,14 +221,14 @@ export class SqliteImageStore {
     return Number(row.count);
   }
 
-  async search(query: string, topK = 8, category?: string, color?: string): Promise<SqliteImageSearchHit[]> {
-    const rows = this.loadRows(category);
+  async search(query: string, topK = 8, options: SqliteSearchOptions = {}): Promise<SqliteImageSearchHit[]> {
+    const rows = this.loadRows(options.category);
     if (rows.length === 0) {
       return [];
     }
 
     // Electron 主进程中不能同时初始化两个 ONNX 模型，否则可能触发 native 崩溃并直接关闭窗口。
-    const retrievalQuery = [query.trim(), color?.trim()].filter(Boolean).join(" ");
+    const retrievalQuery = [query.trim(), options.extraQuery?.trim()].filter(Boolean).join(" ");
     const queryVector = await embedText(retrievalQuery);
     const keywords = await segmentQuery(retrievalQuery);
     const prepared = rows.map((row): PreparedSearchItem => {

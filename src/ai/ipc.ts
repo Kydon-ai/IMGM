@@ -20,7 +20,9 @@ async function createRuntime(): Promise<AiRuntime> {
   const model = new DeepSeekClient(config);
   const retriever: ImageRetriever = {
     search: async (intent, limit): Promise<ImageSearchHit[]> =>
-      store.search(intent.query, limit, intent.category, intent.color),
+      store.search(intent.query, limit, {
+        extraQuery: [intent.category, intent.color].filter(Boolean).join(" "),
+      }),
   };
   return { service: new ImageRagService(model, retriever), store };
 }

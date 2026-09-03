@@ -1,6 +1,5 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
-import { CATEGORY_KNOWLEDGE } from "./category-knowledge";
 import { DeepSeekMessage, RagChatModel } from "./deepseek-client";
 import { AiChatEvent, AiChatRequest, AiChatResponse, ImageSearchHit, SearchIntent } from "./types";
 
@@ -15,11 +14,9 @@ const SearchIntentSchema = z.object({
   query: z.string().trim().min(1).optional().nullable(),
   category: z.string().trim().min(1).optional().nullable(),
   color: z.string().trim().min(1).optional().nullable(),
-  animated: z.boolean().optional(),
-  transparent: z.boolean().optional(),
+  animated: z.boolean().optional().nullable(),
+  transparent: z.boolean().optional().nullable(),
 });
-
-const COLOR_OPTIONS = ["黑色", "白色", "灰色", "红色", "橙色", "黄色", "绿色", "青色", "蓝色", "紫色", "粉色", "棕色"];
 
 const RagState = Annotation.Root({
   request: Annotation<AiChatRequest>(),
@@ -39,23 +36,20 @@ export function buildFallbackIntent(message: string): SearchIntent {
   return result;
 }
 
-function findExactOption(value: string | null | undefined, options: readonly string[]): string | undefined {
-  const normalized = value?.normalize("NFKC").trim().toLowerCase();
-  if (!normalized) {
-    return undefined;
-  }
-  return options.find((option) => option.normalize("NFKC").toLowerCase() === normalized);
+function cleanIntentValue(value: string | null | undefined): string | undefined {
+  const cleaned = value?.normalize("NFKC").trim();
+  return cleaned || undefined;
 }
 
-/** 校验 LLM 意图，并只允许下游使用受控的类别和颜色值。 */
+/** 校验 LLM 意图；类别和颜色使用自由文本，不依赖本地固定列表。 */
 function normalizeIntent(message: string, modelIntent: unknown): SearchIntent {
   const parsed = SearchIntentSchema.safeParse(modelIntent);
   if (!parsed.success) {
     return buildFallbackIntent(message);
   }
 
-  const category = findExactOption(parsed.data.category, Object.keys(CATEGORY_KNOWLEDGE));
-  const color = findExactOption(parsed.data.color, COLOR_OPTIONS);
+  const category = cleanIntentValue(parsed.data.category);
+  const color = cleanIntentValue(parsed.data.color);
   return {
     shouldSearch: parsed.data.shouldSearch ?? false,
     query: parsed.data.query || message,
@@ -74,8 +68,7 @@ function buildIntentMessages(message: string): DeepSeekMessage[] {
       content:
         "你是图片检索意图解析器。必须只输出一个 JSON 对象，不要输出 Markdown、解释或对象之外的内容。" +
         'JSON 字段必须为 shouldSearch、query、category、color、animated、transparent；没有对应条件时使用 null。' +
-        ` category 只能取以下值之一或 null：${Object.keys(CATEGORY_KNOWLEDGE).join("、")}。` +
-        ` color 只能取以下值之一或 null：${COLOR_OPTIONS.join("、")}。` +
+        "category 和 color 都是自由文本，不要从任何固定类别列表中选择，也不要因为本地没有该类别就改写或拒绝；没有提及时返回 null。" +
         "query 应保留用户真正想搜索的视觉描述；用户只是闲聊时 shouldSearch=false，否则为 true。",
     },
     { role: "user", content: message },
