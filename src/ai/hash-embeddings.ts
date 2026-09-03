@@ -1,5 +1,4 @@
 import { Embeddings } from "@langchain/core/embeddings";
-import { getCategoryFeatures } from "./category-knowledge";
 
 const DEFAULT_DIMENSION = 384;
 
@@ -29,10 +28,6 @@ function tokenize(input: string): Array<{ token: string; weight: number }> {
         tokens.push({ token: segment.slice(index, index + 2), weight: 1.1 });
       }
     }
-  }
-
-  for (const feature of getCategoryFeatures(normalized)) {
-    tokens.push({ token: feature.normalize("NFKC").toLowerCase(), weight: 5 });
   }
 
   return tokens;

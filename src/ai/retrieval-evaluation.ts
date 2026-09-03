@@ -1,8 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
-import { CATEGORY_KNOWLEDGE, detectCategory, getCategoryFamily } from "./category-knowledge";
 import { SqliteImageStore } from "./sqlite-image-store";
-import { DatasetSummary, ImageMetadata, SearchIntent } from "./types";
+import { DatasetSummary, ImageMetadata } from "./types";
 
 export type CategoryEvaluation = {
   category: string;
@@ -25,8 +24,7 @@ export type RetrievalEvaluation = {
 
 /** 为一个类别生成多种自然语言评测查询。 */
 function buildCategoryQueries(category: string, samples: ImageMetadata[]): string[] {
-  const knowledge = CATEGORY_KNOWLEDGE[category];
-  const name = knowledge?.aliases[0] || category;
+  const name = category;
   const colors = Array.from(new Set(samples.map((item) => item.dominantColor))).slice(0, 2);
   return Array.from(
     new Set([
@@ -40,7 +38,7 @@ function buildCategoryQueries(category: string, samples: ImageMetadata[]): strin
 
 /** 判断命中类别是否属于查询类别的相关系列。 */
 function isRelevant(expectedCategory: string, actualCategory: string): boolean {
-  return getCategoryFamily(expectedCategory).includes(actualCategory);
+  return expectedCategory === actualCategory;
 }
 
 /** 在 SQLite 图片索引上评估测试集类别查询的 Precision@8。 */
@@ -64,8 +62,8 @@ export async function evaluateRetrieval(
   const categories: CategoryEvaluation[] = [];
   const excludedCategories: string[] = [];
   for (const [category, samples] of testGroups) {
-    const familyTrainCount = getCategoryFamily(category).reduce((sum, item) => sum + (trainCounts.get(item) || 0), 0);
-    if (familyTrainCount < 8) {
+    const trainCount = trainCounts.get(category) || 0;
+    if (trainCount < 8) {
       excludedCategories.push(category);
       continue;
     }
@@ -74,8 +72,7 @@ export async function evaluateRetrieval(
     let relevant = 0;
     let returned = 0;
     for (const query of queries) {
-      const intent: SearchIntent = { shouldSearch: true, query, category: detectCategory(query) || category };
-      const hits = await store.search(intent.query, 8);
+      const hits = await store.search(query, 8);
       relevant += hits.filter((hit) => isRelevant(category, hit.category)).length;
       returned += hits.length;
     }

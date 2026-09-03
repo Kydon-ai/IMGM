@@ -2,7 +2,6 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
-import { getCategoryTags } from "./category-knowledge";
 import { DatasetSplit, ImageAspect, ImageMetadata } from "./types";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]);
@@ -128,7 +127,7 @@ export async function extractImageMetadata(rootPath: string, filePath: string): 
     const dominantColor = getNearestColor(dominant.r, dominant.g, dominant.b);
     const tags = Array.from(
       new Set([
-        ...getCategoryTags(category),
+        category,
         dominantColor,
         getImageAspect(width, height),
         rawMetadata.pages && rawMetadata.pages > 1 ? "动图" : "静态图",
@@ -176,7 +175,7 @@ export async function extractImageMetadata(rootPath: string, filePath: string): 
       transparent: false,
       dominantColor: "未知",
       dominantHex: "#000000",
-      tags: getCategoryTags(category),
+      tags: [category],
       split: getInitialSplit(id),
       status: "partial" as const,
       error: error instanceof Error ? error.message : String(error),
