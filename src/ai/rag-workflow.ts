@@ -60,8 +60,8 @@ function normalizeIntent(message: string, modelIntent: unknown): SearchIntent {
   };
 }
 
-/** 构建检索意图解析提示词。 */
-function buildIntentMessages(message: string): DeepSeekMessage[] {
+/** 构建包含聊天历史的检索意图解析提示词。 */
+function buildIntentMessages(request: AiChatRequest): DeepSeekMessage[] {
   return [
     {
       role: "system",
@@ -71,7 +71,8 @@ function buildIntentMessages(message: string): DeepSeekMessage[] {
         "category 和 color 都是自由文本，不要从任何固定类别列表中选择，也不要因为本地没有该类别就改写或拒绝；没有提及时返回 null。" +
         "query 应保留用户真正想搜索的视觉描述；用户只是闲聊时 shouldSearch=false，否则为 true。",
     },
-    { role: "user", content: message },
+    ...request.history.slice(-20),
+    { role: "user", content: request.message },
   ];
 }
 
@@ -98,7 +99,7 @@ export function createImageRagWorkflow(model: RagChatModel, retriever: ImageRetr
   const analyzeIntent = async (state: typeof RagState.State): Promise<Partial<typeof RagState.State>> => {
     state.emit({ requestId: state.request.requestId, type: "status", message: "正在理解检索需求…" });
     try {
-      const modelIntent = await model.completeJson<unknown>(buildIntentMessages(state.request.message));
+      const modelIntent = await model.completeJson<unknown>(buildIntentMessages(state.request));
       return { intent: normalizeIntent(state.request.message, modelIntent) };
     } catch {
       return { intent: buildFallbackIntent(state.request.message) };

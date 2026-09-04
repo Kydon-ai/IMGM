@@ -5,8 +5,11 @@ import { buildFallbackIntent, ImageRetriever, ImageRagService } from "../ai/rag-
 import { ImageSearchHit, SearchIntent } from "../ai/types";
 
 class FakeModel implements RagChatModel {
+  intentMessages?: DeepSeekMessage[];
+
   /** 返回固定检索意图。 */
-  async completeJson<T>(): Promise<T> {
+  async completeJson<T>(messages: DeepSeekMessage[]): Promise<T> {
+    this.intentMessages = messages;
     return {
       shouldSearch: true,
       query: "可爱的蓝色猫咪",
@@ -48,13 +51,29 @@ class FakeRetriever implements ImageRetriever {
 
 test("LangGraph 工作流应先检索再流式回答", async () => {
   const retriever = new FakeRetriever();
-  const service = new ImageRagService(new FakeModel(), retriever);
+  const model = new FakeModel();
+  const service = new ImageRagService(model, retriever);
   const events: string[] = [];
   const result = await service.ask(
-    { requestId: "request-1", threadId: "thread-1", message: "找咖波", history: [] },
+    {
+      requestId: "request-1",
+      threadId: "thread-1",
+      message: "再找一张，要求透明背景",
+      history: [
+        { role: "user", content: "我想找一只猫咪" },
+        { role: "assistant", content: "可以，我来帮你找猫咪图片。" },
+        { role: "user", content: "最好是蓝色的，正在注视镜头" },
+      ],
+    },
     (event) => events.push(event.type)
   );
 
+  assert.deepEqual(model.intentMessages?.slice(1), [
+    { role: "user", content: "我想找一只猫咪" },
+    { role: "assistant", content: "可以，我来帮你找猫咪图片。" },
+    { role: "user", content: "最好是蓝色的，正在注视镜头" },
+    { role: "user", content: "再找一张，要求透明背景" },
+  ]);
   assert.equal(retriever.lastIntent?.category, "新增目录分类");
   assert.equal(retriever.lastIntent?.color, "蓝色");
   assert.equal(retriever.lastIntent?.query, "可爱的蓝色猫咪");
