@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, net, Notification } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, net, Notification, safeStorage } from "electron";
 import { execFile } from "child_process";
 import crypto from "crypto";
 import Store from "electron-store";
@@ -38,7 +38,84 @@ const RIR_CLIPBOARD_DIRECTORY = "imgm-rir-clipboard";
 const RIR_CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const APP_SETTINGS_KEY = "appSettings";
 const DEFAULT_SEARCH_HISTORY_LIMIT = 50;
+const ENCRYPTED_API_KEY_PREFIX = "enc:v1:";
 let forwardRendererConsole = store.get(FORWARD_RENDERER_CONSOLE_KEY, true);
+
+/** 检查 Electron 是否已经可以使用系统安全存储。 */
+function isApiKeyEncryptionAvailable(): boolean {
+  try {
+    return safeStorage.isEncryptionAvailable();
+  } catch {
+    return false;
+  }
+}
+
+/** 使用系统安全存储加密 API 密钥，密文只保存到本地设置文件。 */
+function encryptApiKey(apiKey: string): string {
+  if (!apiKey || apiKey.startsWith(ENCRYPTED_API_KEY_PREFIX)) {
+    return apiKey;
+  }
+  if (!isApiKeyEncryptionAvailable()) {
+    throw new Error("当前系统暂不可用安全存储，无法安全保存 API 密钥");
+  }
+  return `${ENCRYPTED_API_KEY_PREFIX}${safeStorage.encryptString(apiKey).toString("base64")}`;
+}
+
+/** 读取本地设置中的 API 密钥；兼容升级前保存的明文配置。 */
+function decryptApiKey(storedApiKey: string): string {
+  if (!storedApiKey.startsWith(ENCRYPTED_API_KEY_PREFIX)) {
+    return storedApiKey;
+  }
+  if (!isApiKeyEncryptionAvailable()) {
+    return "";
+  }
+  try {
+    const encoded = storedApiKey.slice(ENCRYPTED_API_KEY_PREFIX.length);
+    return safeStorage.decryptString(Buffer.from(encoded, "base64"));
+  } catch {
+    console.warn("读取本地 LLM API 密钥失败，请重新配置该供应商");
+    return "";
+  }
+}
+
+/** 生成写入 electron-store 的设置副本，避免将 API 密钥以明文落盘。 */
+function serializeSettingsForStorage(settings: AppSettings): AppSettings {
+  return {
+    ...settings,
+    llmProviders: settings.llmProviders.map((provider) => ({
+      ...provider,
+      apiKey: encryptApiKey(provider.apiKey),
+    })),
+  };
+}
+
+/** 判断设置中是否还存在升级前的明文 API 密钥。 */
+function containsPlaintextApiKey(value: unknown): boolean {
+  const settings = value as Partial<AppSettings> | null;
+  if (!Array.isArray(settings?.llmProviders)) {
+    return false;
+  }
+  return settings.llmProviders.some((provider) => {
+    const apiKey = (provider as Partial<LlmProviderSettings> | null)?.apiKey;
+    return typeof apiKey === "string"
+      && Boolean(apiKey)
+      && !apiKey.startsWith(ENCRYPTED_API_KEY_PREFIX);
+  });
+}
+
+/** 将升级前的明文密钥迁移为当前用户系统凭据保护的密文。 */
+function migrateStoredApiKeys(): void {
+  const raw = store.get(APP_SETTINGS_KEY, null) as Partial<AppSettings> | null;
+  if (!containsPlaintextApiKey(raw) || !isApiKeyEncryptionAvailable()) {
+    return;
+  }
+  try {
+    store.set(APP_SETTINGS_KEY, serializeSettingsForStorage(readAppSettings()));
+    console.log("已将本地 LLM API 密钥迁移到系统安全存储");
+  } catch {
+    console.warn("本地 LLM API 密钥迁移失败，将在下次启动时重试");
+  }
+}
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -79,7 +156,7 @@ function normalizeStoredProvider(value: unknown): LlmProviderSettings | null {
     name: provider.name.trim().slice(0, 120) || "未命名供应商",
     baseUrl: provider.baseUrl.trim().replace(/\/$/, "").slice(0, 500),
     model: provider.model.trim().slice(0, 200),
-    apiKey: provider.apiKey.slice(0, 1000),
+    apiKey: decryptApiKey(provider.apiKey).slice(0, 1000),
     enabled: provider.enabled !== false,
   };
 }
@@ -295,6 +372,7 @@ const createWindow = (): void => {
   }
 
   IPCRegister(win);
+  migrateStoredApiKeys();
   registerAiIpc(getRuntimeAiConfig);
 };
 
@@ -437,7 +515,7 @@ function IPCRegister(currentWin: BrowserWindow): void {
 
   ipcMain.handle("saveSettings", async (_event, rawSettings: unknown) => {
     const settings = normalizeSettingsForSave(rawSettings);
-    store.set(APP_SETTINGS_KEY, settings);
+    store.set(APP_SETTINGS_KEY, serializeSettingsForStorage(settings));
     trimSearchHistory(settings.searchHistoryLimit);
     // 让下一次 AI 请求按新激活的供应商重新创建客户端。
     await closeAiRuntime();
