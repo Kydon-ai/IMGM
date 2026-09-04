@@ -75,9 +75,13 @@ function normalizeStoredProvider(value: unknown): LlmProviderSettings | null {
   };
 }
 
-function isValidLlmProvider(provider: LlmProviderSettings): boolean {
-  return provider.enabled && Boolean(provider.apiKey.trim())
+function hasValidLlmCredentials(provider: LlmProviderSettings): boolean {
+  return Boolean(provider.apiKey.trim())
     && Boolean(provider.model.trim()) && isHttpUrl(provider.baseUrl);
+}
+
+function isValidLlmProvider(provider: LlmProviderSettings): boolean {
+  return provider.enabled && hasValidLlmCredentials(provider);
 }
 
 function readAppSettings(): AppSettings {
@@ -176,7 +180,7 @@ function getRuntimeAiConfig(): ReturnType<typeof getAiConfig> {
 
 function validateLlmProviderForTest(value: unknown): LlmProviderSettings {
   const provider = normalizeStoredProvider(value);
-  if (!provider || !isValidLlmProvider(provider)) {
+  if (!provider || !hasValidLlmCredentials(provider)) {
     throw new Error("LLM 配置无效，请填写 API 地址、模型和 API 密钥");
   }
   return provider;

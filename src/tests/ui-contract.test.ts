@@ -67,6 +67,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   const mainSource = fs.readFileSync(path.resolve(process.cwd(), "src/main.ts"), "utf8");
   assert.match(mainSource, /enabled: provider\.id === activeLlmProviderId/);
   assert.match(mainSource, /enabled: provider\.id === activeProvider\.id/);
+  assert.match(mainSource, /function hasValidLlmCredentials/);
+  assert.match(mainSource, /!provider \|\| !hasValidLlmCredentials\(provider\)/);
 
   const chatSource = fs.readFileSync(path.resolve(process.cwd(), "src/ai-chat.ts"), "utf8");
   assert.match(chatSource, /setTimeout\(\(\) => \{[\s\S]*?5000/);
