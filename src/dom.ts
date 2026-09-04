@@ -272,11 +272,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     getElementByIdOrThrow<HTMLElement>("page-num").textContent = String(page);
   });
 
-  getElementByIdOrThrow<HTMLButtonElement>("check-cache").addEventListener("click", async () => {
-    const store = await window.electron.getCache();
-    console.log("打印当前缓存", store);
-  });
-
   getElementByIdOrThrow<HTMLButtonElement>("search-button").addEventListener("click", async () => {
     const searchText = getElementByIdOrThrow<HTMLInputElement>("search-input").value;
     const targetList = (await window.electron.getData<string[]>(GALLERY_STORAGE.local.targetList)) || [];
