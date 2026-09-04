@@ -481,7 +481,6 @@ function bindSidebarNavigation(): void {
       }
 
       const isRirPage = targetId === "rir-section";
-      const isAiEntry = targetId === "ai-panel";
       const pageTargetId = isRirPage ? "rir-section" : "local-section";
 
       pageSections.forEach((section) => {
@@ -490,7 +489,7 @@ function bindSidebarNavigation(): void {
       appShell.classList.toggle("rir-mode", isRirPage);
       void switchGalleryMode(isRirPage ? "rir" : "local");
 
-      document.getElementById(isAiEntry ? "ai-panel" : pageTargetId)?.scrollIntoView({
+      document.getElementById(pageTargetId)?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
