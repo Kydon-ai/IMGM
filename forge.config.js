@@ -21,6 +21,8 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
       config: {
         setupIcon: './public/img/IMGM.ico',
+        name: "IMGM_app",
+        setupExe: "IMGM-Setup.exe"
       },
     },
     {
