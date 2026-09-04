@@ -1,3 +1,5 @@
+import { renderMarkdown } from "./ai-markdown";
+
 type ChatRole = "user" | "assistant";
 
 type ChatMessage = {
@@ -30,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const threadId = crypto.randomUUID();
   let activeRequestId = "";
   let assistantBubble: HTMLElement | null = null;
+  let assistantContent = "";
   let currentImages: ChatSearchHit[] = [];
   let resultsHideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,7 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.className = `ai-message-wrap ${role}`;
     const element = document.createElement("div");
     element.className = `ai-message ${role}`;
-    element.textContent = content;
+    if (role === "assistant") {
+      renderMarkdown(element, content);
+    } else {
+      element.textContent = content;
+    }
     wrapper.appendChild(element);
     messages.appendChild(wrapper);
     messages.scrollTop = messages.scrollHeight;
@@ -151,7 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!assistantBubble) {
         assistantBubble = appendMessage("assistant", "");
       }
-      assistantBubble.textContent += event.chunk;
+      assistantContent += event.chunk;
+      renderMarkdown(assistantBubble, assistantContent);
       messages.scrollTop = messages.scrollHeight;
     } else if (event.type === "error") {
       status.textContent = event.message || "AI 请求失败";
@@ -173,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resizeInput();
     activeRequestId = crypto.randomUUID();
     assistantBubble = null;
+    assistantContent = "";
     setBusy(true);
 
     try {
@@ -182,10 +191,15 @@ document.addEventListener("DOMContentLoaded", () => {
         message,
         history: requestHistory,
       });
+      const assistantAnswer = response.answer || assistantContent || "已完成检索。";
       if (!assistantBubble) {
-        assistantBubble = appendMessage("assistant", response.answer || "已完成检索。");
+        assistantContent = assistantAnswer;
+        assistantBubble = appendMessage("assistant", assistantAnswer);
+      } else if (response.answer && response.answer !== assistantContent) {
+        assistantContent = response.answer;
+        renderMarkdown(assistantBubble, assistantContent);
       }
-      history.push({ role: "assistant", content: response.answer || assistantBubble.textContent || "" });
+      history.push({ role: "assistant", content: assistantContent });
       const responseImages = Array.isArray(response.images) ? response.images as ChatSearchHit[] : [];
       renderResults(responseImages);
       addReplayButton(assistantBubble, responseImages);
@@ -206,7 +220,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       if (!assistantBubble) {
-        assistantBubble = appendMessage("assistant", `请求失败：${detail}`);
+        assistantContent = `请求失败：${detail}`;
+        assistantBubble = appendMessage("assistant", assistantContent);
       }
       status.textContent = "请求失败，请检查 DeepSeek 与 SQLite 配置";
     } finally {
