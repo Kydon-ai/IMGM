@@ -1,0 +1,45 @@
+appId: tech.qidong.imgm
+productName: IMGM
+artifactName: IMGM-Setup.${ext}
+
+directories:
+  output: out/installer
+
+files:
+  - dist/**/*
+  - index.html
+  - public/**/*
+  - package.json
+  - '!src{,/**/*}'
+  - '!data{,/**/*}'
+  - '!development_task{,/**/*}'
+  - '!artifacts{,/**/*}'
+  - '!out{,/**/*}'
+  - '!review{,/**/*}'
+  - '!README.md'
+  - '!test.html'
+  - '!test.json'
+  - '!tsconfig.json'
+  - '!forge.config.js'
+  - '!forge-packager-config.js'
+
+asar: true
+asarUnpack:
+  - node_modules/sharp/**/*
+  - node_modules/@img/**/*
+  - node_modules/better-sqlite3/**/*
+
+win:
+  icon: public/img/IMGM.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: IMGM
