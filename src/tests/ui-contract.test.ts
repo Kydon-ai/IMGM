@@ -5,7 +5,7 @@ import test from "node:test";
 
 test("AI 面板必需元素和脚本应只出现一次", () => {
   const html = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf8");
-  const requiredIds = ["ai-status", "ai-messages", "ai-results", "ai-show-gallery", "ai-form", "ai-input", "ai-send"];
+  const requiredIds = ["ai-status", "ai-messages", "ai-results", "ai-show-gallery", "ai-form", "ai-input", "ai-send", "ai-new-conversation"];
 
   for (const id of requiredIds) {
     const matches = html.match(new RegExp(`id=["']${id}["']`, "g")) || [];
@@ -24,6 +24,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="ai-results-close"/);
   assert.match(html, /<form id="ai-form" class="ai-composer">\s*<section id="ai-results-section" class="ai-results-section">/);
   assert.match(html, /<div class="ai-input-shell">\s*<textarea id="ai-input"[\s\S]*<button id="ai-send"[\s\S]*<svg/);
+  assert.match(html, /<button id="ai-new-conversation"[^>]*>新建对话<\/button>/);
+  assert.doesNotMatch(html, /class="ai-online"/);
   assert.match(html, /id="settings-popover"[\s\S]*data-settings-tab="llm"/);
   assert.match(html, /id="llm-active-provider"/);
   assert.match(html, /id="llm-provider-list"/);
@@ -75,6 +77,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(chatSource, /ai-replay-search/);
   assert.match(chatSource, /showResultsInMainGallery\(images\.slice\(\)\)/);
   assert.match(chatSource, /function resizeInput\(\): void/);
+  assert.match(chatSource, /startNewConversation/);
+  assert.match(chatSource, /activeRequestId !== requestId/);
   assert.match(domSource, /progress\.currentPath\.split/);
 
   assert.doesNotMatch(html, /rename-btn|改标签/);

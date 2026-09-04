@@ -1176,25 +1176,25 @@
             white-space: nowrap;
         }
 
-        .ai-online {
+        .ai-new-conversation {
             display: inline-flex;
             align-items: center;
             flex: 0 0 auto;
-            gap: 5px;
-            padding: 4px 8px;
-            border-radius: 999px;
-            color: #24966a;
-            background: #e1f8ed;
+            min-height: 28px;
+            padding: 0 10px;
+            border: 1px solid #d9e3f2;
+            border-radius: 8px;
+            color: #4d638d;
+            background: #f8faff;
+            cursor: pointer;
             font-size: 11px;
             font-weight: 600;
         }
 
-        .ai-online::before {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #25c886;
-            content: "";
+        .ai-new-conversation:hover {
+            border-color: #aebef8;
+            color: #2f5ae0;
+            background: #eef3ff;
         }
 
         .ai-status {
@@ -2705,7 +2705,7 @@
                     <span class="ai-brand-icon" aria-hidden="true">▣</span>
                     <h2>AI图片助手</h2>
                 </div>
-                <span class="ai-online">在线</span>
+                <button id="ai-new-conversation" class="ai-new-conversation" type="button">新建对话</button>
             </div>
             <p id="ai-status" class="ai-status">AI 已就绪</p>
         </header>

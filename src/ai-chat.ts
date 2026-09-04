@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = getAiElement<HTMLFormElement>("ai-form");
   const input = getAiElement<HTMLTextAreaElement>("ai-input");
   const sendButton = getAiElement<HTMLButtonElement>("ai-send");
+  const newConversationButton = getAiElement<HTMLButtonElement>("ai-new-conversation");
   const status = getAiElement<HTMLElement>("ai-status");
   const messages = getAiElement<HTMLElement>("ai-messages");
   const resultsSection = getAiElement<HTMLElement>("ai-results-section");
@@ -27,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const showGallery = getAiElement<HTMLButtonElement>("ai-show-gallery");
   const resultsClose = getAiElement<HTMLButtonElement>("ai-results-close");
   const history: ChatMessage[] = [];
-  const threadId = crypto.randomUUID();
+  let threadId = crypto.randomUUID();
   let activeRequestId = "";
   let assistantBubble: HTMLElement | null = null;
   let assistantContent = "";
@@ -67,6 +68,31 @@ document.addEventListener("DOMContentLoaded", () => {
   function setBusy(busy: boolean): void {
     sendButton.disabled = busy;
     input.disabled = busy;
+  }
+
+  /** 清空当前会话并创建新的上下文。旧请求返回时会因 requestId 失效而被忽略。 */
+  function startNewConversation(): void {
+    activeRequestId = "";
+    threadId = crypto.randomUUID();
+    history.length = 0;
+    assistantBubble = null;
+    assistantContent = "";
+    currentImages = [];
+    if (resultsHideTimer) {
+      clearTimeout(resultsHideTimer);
+      resultsHideTimer = null;
+    }
+    resultsSection.hidden = true;
+    results.replaceChildren();
+    resultsCount.textContent = "检索结果";
+    showGallery.disabled = true;
+    messages.replaceChildren();
+    appendMessage("assistant", "告诉我你想找什么图片。例如：“找 8 张透明背景的咖波表情包”。");
+    input.value = "";
+    resizeInput();
+    status.textContent = "AI 已就绪";
+    setBusy(false);
+    input.focus();
   }
 
   /** 渲染 SQLite 返回的最多八张图片。 */
@@ -177,18 +203,22 @@ document.addEventListener("DOMContentLoaded", () => {
     appendMessage("user", message);
     input.value = "";
     resizeInput();
-    activeRequestId = crypto.randomUUID();
+    const requestId = crypto.randomUUID();
+    activeRequestId = requestId;
     assistantBubble = null;
     assistantContent = "";
     setBusy(true);
 
     try {
       const response = await window.electron.ai.ask({
-        requestId: activeRequestId,
+        requestId,
         threadId,
         message,
         history: requestHistory,
       });
+      if (activeRequestId !== requestId) {
+        return;
+      }
       const assistantAnswer = response.answer || assistantContent || "已完成检索。";
       if (!assistantBubble) {
         assistantContent = assistantAnswer;
@@ -216,6 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       status.textContent = "检索与回答完成";
     } catch (error) {
+      if (activeRequestId !== requestId) {
+        return;
+      }
       const detail = error instanceof Error ? error.message : String(error);
       if (!assistantBubble) {
         assistantContent = `请求失败：${detail}`;
@@ -223,8 +256,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       status.textContent = "请求失败，请检查 DeepSeek 与 SQLite 配置";
     } finally {
-      setBusy(false);
-      input.focus();
+      if (activeRequestId === requestId) {
+        setBusy(false);
+        input.focus();
+      }
     }
   }
 
@@ -241,6 +276,8 @@ document.addEventListener("DOMContentLoaded", () => {
       void submitMessage();
     }
   });
+
+  newConversationButton.addEventListener("click", startNewConversation);
 
   document.querySelectorAll<HTMLButtonElement>(".ai-suggestion").forEach((button) => {
     button.addEventListener("click", () => {
