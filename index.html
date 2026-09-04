@@ -1537,6 +1537,113 @@
             border-top: 1px solid #e3e8f2;
         }
 
+        /* 侧栏采用截图中的深色窄栏布局。 */
+        .imgm-sidebar {
+            flex: 0 0 54px;
+            width: 54px;
+            padding: 12px 5px 10px;
+            border: 0;
+            border-radius: 0;
+            background: #101a2d;
+            box-shadow: none;
+        }
+
+        .imgm-nav {
+            flex: 0 0 auto;
+            gap: 7px;
+            margin-top: 0;
+        }
+
+        .imgm-nav-item,
+        .imgm-settings-button {
+            position: relative;
+            width: 44px;
+            min-height: 54px;
+            padding: 5px 2px;
+            border-radius: 8px;
+            color: #91a0b9;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .imgm-nav-item:hover,
+        .imgm-settings-button:hover {
+            color: #d9e4f8;
+            background: #1d2940;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .imgm-nav-item.active {
+            color: #f4f7ff;
+            background: #27344c;
+            box-shadow: none;
+        }
+
+        .imgm-nav-item.active::before {
+            position: absolute;
+            top: 11px;
+            bottom: 11px;
+            left: 0;
+            width: 2px;
+            border-radius: 2px;
+            background: #3d8bff;
+            content: "";
+        }
+
+        .imgm-nav-icon {
+            width: 25px;
+            height: 23px;
+            margin-bottom: 3px;
+            border-radius: 5px;
+            color: #91a0b9;
+            background: transparent;
+            font-size: 16px;
+        }
+
+        .imgm-nav-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.5;
+        }
+
+        .imgm-nav-item.active .imgm-nav-icon {
+            color: #3d8bff;
+            background: transparent;
+        }
+
+        .imgm-nav-label {
+            max-width: 42px;
+            overflow: hidden;
+            color: inherit;
+            font-size: 9px;
+            line-height: 1.15;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .imgm-sidebar-divider {
+            width: 26px;
+            height: 1px;
+            margin: 10px 0 9px;
+            background: #29364d;
+        }
+
+        .imgm-settings-button {
+            min-height: 54px;
+        }
+
+        .imgm-settings-button .imgm-nav-icon {
+            color: #91a0b9;
+        }
+
+        .settings-popover {
+            left: 62px;
+        }
+
         .embedding-index-dialog {
             position: fixed;
             z-index: 1000;
@@ -1655,21 +1762,29 @@
     <aside class="imgm-sidebar" aria-label="主导航">
         <nav class="imgm-nav" aria-label="功能导航">
             <button class="imgm-nav-item active" type="button" data-target="local-section" aria-controls="local-section" aria-current="page">
-                <span class="imgm-nav-icon" aria-hidden="true">▦</span>
+                <span class="imgm-nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><circle cx="8" cy="8" r="1"></circle><path d="m6 17 4-4 3 3 2-2 3 3"></path></svg>
+                </span>
                 <span class="imgm-nav-label">图片库</span>
             </button>
             <button class="imgm-nav-item" type="button" data-target="rir-section" aria-controls="rir-section">
-                <span class="imgm-nav-icon" aria-hidden="true">↗</span>
-                <span class="imgm-nav-label">远程 RIR</span>
+                <span class="imgm-nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7 5v5a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3"></path><path d="M7 5h.01M17 19h.01"></path><path d="M17 14v5M14 16l3-2 3 2"></path></svg>
+                </span>
+                <span class="imgm-nav-label">远程RIR</span>
             </button>
-            <!-- <button class="imgm-nav-item" type="button" data-target="ai-panel" aria-controls="ai-panel">
-                <span class="imgm-nav-icon" aria-hidden="true">✦</span>
+            <button class="imgm-nav-item" type="button" data-target="ai-panel" aria-controls="ai-panel">
+                <span class="imgm-nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M5 6.5A3.5 3.5 0 0 1 8.5 3h7A3.5 3.5 0 0 1 19 6.5v5a3.5 3.5 0 0 1-3.5 3.5h-4.2L7 18v-3.1a3.5 3.5 0 0 1-2-3.4z"></path><path d="M8 9h.01M12 9h.01M16 9h.01"></path></svg>
+                </span>
                 <span class="imgm-nav-label">AI 助手</span>
-            </button> -->
+            </button>
         </nav>
         <div class="imgm-sidebar-divider"></div>
         <button id="settings-button" class="imgm-settings-button" type="button" aria-expanded="false" aria-controls="settings-popover">
-            <span class="imgm-nav-icon" aria-hidden="true">⚙</span>
+            <span class="imgm-nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"></path><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="11" cy="18" r="1.5"></circle></svg>
+            </span>
             <span class="imgm-nav-label">设置</span>
         </button>
         <div id="settings-popover" class="settings-popover" hidden>

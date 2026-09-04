@@ -21,6 +21,7 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="embedding-index-progress"/);
   assert.match(html, /id="search-history-previous"/);
   assert.match(html, /id="search-history-next"/);
+  assert.match(html, /data-target="ai-panel"/);
   assert.match(html, /id="ai-results-close"/);
   assert.match(html, /<form id="ai-form" class="ai-composer">\s*<section id="ai-results-section" class="ai-results-section">/);
   assert.match(html, /<div class="ai-input-shell">\s*<textarea id="ai-input"[\s\S]*<button id="ai-send"[\s\S]*<svg/);
