@@ -45,7 +45,9 @@
     "mcp": "node scripts/run-electron-node.cjs dist/mcp/server.js",
     "start": "npm run build && node scripts/ensure-electron-native.cjs && electron-forge start",
     "package": "npm run build && electron-forge package",
-    "make": "npm run build && electron-builder --win nsis",
+    "make": "npm run build && electron-builder --win nsis && electron-builder --linux",
+    "make:win": "npm run build && electron-builder --win nsis",
+    "make:linux": "npm run build && electron-builder --linux deb rpm",
     "make:forge": "npm run build && electron-forge make",
     "bingo": "npx electron-forge import && npm run make"
   },
