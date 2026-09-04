@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { Notyf } from "notyf";
+import type { AppSettings, LlmProviderSettings } from "./types/app-settings";
 import type { SearchHistoryEntry, SearchHistoryState } from "./types/search-history";
 
 type CopyWebImageResult = {
@@ -54,6 +55,10 @@ contextBridge.exposeInMainWorld("electron", {
   activateLatestDirectorySearch: (): Promise<SearchHistoryState> => ipcRenderer.invoke("activateLatestDirectorySearch"),
   getData: (key: string) => ipcRenderer.invoke("getData", key),
   setData: (key: string, data: unknown) => ipcRenderer.invoke("setData", key, data),
+  getSettings: (): Promise<AppSettings> => ipcRenderer.invoke("getSettings"),
+  saveSettings: (settings: AppSettings): Promise<AppSettings> => ipcRenderer.invoke("saveSettings", settings),
+  testLlmConnection: (provider: LlmProviderSettings): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke("testLlmConnection", provider),
   refresh: (showNotice = true) => {
     refreshPage();
     if (showNotice) {

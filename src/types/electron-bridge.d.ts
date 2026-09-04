@@ -67,6 +67,32 @@ type SearchHistoryState = {
   pointer: number;
 };
 
+type LlmProviderSettings = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+  enabled: boolean;
+};
+
+type ShortcutSettings = {
+  startSearch: string;
+  refreshGallery: string;
+  openImageIndex: string;
+  previousCache: string;
+  nextCache: string;
+  switchMenu: string;
+};
+
+type AppSettings = {
+  llmProviders: LlmProviderSettings[];
+  activeLlmProviderId: string;
+  searchHistoryLimit: number;
+  shortcuts: ShortcutSettings;
+  defaultRirUrl: string;
+};
+
 type ElectronBridge = {
   clipboard: {
     copyWebImage: (url: string) => Promise<CopyWebImageResult>;
@@ -87,6 +113,9 @@ type ElectronBridge = {
   activateLatestDirectorySearch: () => Promise<SearchHistoryState>;
   getData: <T = unknown>(key: string) => Promise<T>;
   setData: (key: string, data: unknown) => Promise<void>;
+  getSettings: () => Promise<AppSettings>;
+  saveSettings: (settings: AppSettings) => Promise<AppSettings>;
+  testLlmConnection: (provider: LlmProviderSettings) => Promise<{ ok: boolean; message: string }>;
   refresh: (showNotice?: boolean) => void;
   sendMsg: (msg: string) => void;
   showMessage: (type: string, msg: string) => void;

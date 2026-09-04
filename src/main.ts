@@ -10,6 +10,8 @@ import sharp from "sharp";
 import { closeAiRuntime, registerAiIpc } from "./ai/ipc";
 import { applyImageIndexSelection, ImageIndexProgress, scanImageIndexGroups } from "./ai/image-indexer";
 import { getAiConfig } from "./ai/config";
+import { DEFAULT_SHORTCUTS, SHORTCUT_ACTIONS } from "./types/app-settings";
+import type { AppSettings, LlmProviderSettings, ShortcutAction } from "./types/app-settings";
 import type { SearchHistoryEntry, SearchHistoryState } from "./types/search-history";
 
 const execFileAsync = promisify(execFile);
@@ -25,7 +27,148 @@ const SEARCH_HISTORY_KEY = "localSearchHistory";
 const SEARCH_HISTORY_POINTER_KEY = "localSearchHistoryPointer";
 const RIR_CLIPBOARD_DIRECTORY = "imgm-rir-clipboard";
 const RIR_CLIPBOARD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const APP_SETTINGS_KEY = "appSettings";
+const DEFAULT_SEARCH_HISTORY_LIMIT = 50;
 let forwardRendererConsole = store.get(FORWARD_RENDERER_CONSOLE_KEY, true);
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function getDefaultAppSettings(): AppSettings {
+  const config = getAiConfig();
+  return {
+    llmProviders: [{
+      id: "deepseek",
+      name: "DeepSeek",
+      baseUrl: config.deepseekBaseUrl,
+      model: config.deepseekModel,
+      apiKey: config.deepseekApiKey,
+      enabled: true,
+    }],
+    activeLlmProviderId: "deepseek",
+    searchHistoryLimit: DEFAULT_SEARCH_HISTORY_LIMIT,
+    shortcuts: { ...DEFAULT_SHORTCUTS },
+    defaultRirUrl: "",
+  };
+}
+
+function normalizeStoredProvider(value: unknown): LlmProviderSettings | null {
+  const provider = value as Partial<LlmProviderSettings> | null;
+  if (!provider || typeof provider.id !== "string" || !provider.id.trim()
+    || typeof provider.name !== "string" || typeof provider.baseUrl !== "string"
+    || typeof provider.model !== "string" || typeof provider.apiKey !== "string") {
+    return null;
+  }
+  return {
+    id: provider.id.trim().slice(0, 80),
+    name: provider.name.trim().slice(0, 120) || "未命名供应商",
+    baseUrl: provider.baseUrl.trim().replace(/\/$/, "").slice(0, 500),
+    model: provider.model.trim().slice(0, 200),
+    apiKey: provider.apiKey.slice(0, 1000),
+    enabled: provider.enabled !== false,
+  };
+}
+
+function isValidLlmProvider(provider: LlmProviderSettings): boolean {
+  return provider.enabled && Boolean(provider.apiKey.trim())
+    && Boolean(provider.model.trim()) && isHttpUrl(provider.baseUrl);
+}
+
+function readAppSettings(): AppSettings {
+  const defaults = getDefaultAppSettings();
+  const raw = store.get(APP_SETTINGS_KEY, {}) as Partial<AppSettings> | null;
+  const providers = Array.isArray(raw?.llmProviders)
+    ? raw.llmProviders.map(normalizeStoredProvider).filter((item): item is LlmProviderSettings => item !== null)
+    : [];
+  const uniqueProviders = providers.filter((provider, index, items) => items.findIndex((item) => item.id === provider.id) === index);
+  const llmProviders = uniqueProviders.length > 0 ? uniqueProviders : defaults.llmProviders;
+  const activeLlmProviderId = typeof raw?.activeLlmProviderId === "string"
+    && llmProviders.some((provider) => provider.id === raw.activeLlmProviderId)
+    ? raw.activeLlmProviderId
+    : llmProviders[0].id;
+  const rawShortcuts = raw?.shortcuts as Partial<Record<ShortcutAction, unknown>> | undefined;
+  const shortcuts = { ...defaults.shortcuts };
+  for (const action of SHORTCUT_ACTIONS) {
+    if (typeof rawShortcuts?.[action] === "string" && rawShortcuts[action].trim()) {
+      shortcuts[action] = rawShortcuts[action].trim().slice(0, 80);
+    }
+  }
+  const rawLimit = raw?.searchHistoryLimit;
+  const searchHistoryLimit = typeof rawLimit === "number" && Number.isInteger(rawLimit)
+    ? Math.max(1, Math.min(500, rawLimit))
+    : DEFAULT_SEARCH_HISTORY_LIMIT;
+  const defaultRirUrl = typeof raw?.defaultRirUrl === "string" ? raw.defaultRirUrl.trim().slice(0, 2000) : "";
+  return { llmProviders, activeLlmProviderId, searchHistoryLimit, shortcuts, defaultRirUrl };
+}
+
+function normalizeSettingsForSave(value: unknown): AppSettings {
+  const settings = value as Partial<AppSettings> | null;
+  const providers = Array.isArray(settings?.llmProviders)
+    ? settings.llmProviders.map(normalizeStoredProvider).filter((item): item is LlmProviderSettings => item !== null)
+    : [];
+  const uniqueProviders = providers.filter((provider, index, items) => items.findIndex((item) => item.id === provider.id) === index);
+  if (uniqueProviders.length === 0) {
+    throw new Error("至少需要配置一个 LLM 供应商");
+  }
+  if (typeof settings?.activeLlmProviderId !== "string") {
+    throw new Error("请选择要激活的 LLM 配置");
+  }
+  const activeProvider = uniqueProviders.find((provider) => provider.id === settings.activeLlmProviderId);
+  if (!activeProvider || !isValidLlmProvider(activeProvider)) {
+    throw new Error("当前激活的 LLM 配置无效，请填写 API 地址、模型和 API 密钥并通过连通性测试");
+  }
+
+  const rawShortcuts = settings.shortcuts as Partial<Record<ShortcutAction, unknown>> | undefined;
+  const shortcuts = { ...DEFAULT_SHORTCUTS };
+  for (const action of SHORTCUT_ACTIONS) {
+    if (typeof rawShortcuts?.[action] === "string" && rawShortcuts[action].trim()) {
+      shortcuts[action] = rawShortcuts[action].trim().slice(0, 80);
+    }
+  }
+  const searchHistoryLimit = typeof settings.searchHistoryLimit === "number" && Number.isInteger(settings.searchHistoryLimit)
+    ? Math.max(1, Math.min(500, settings.searchHistoryLimit))
+    : DEFAULT_SEARCH_HISTORY_LIMIT;
+  const defaultRirUrl = typeof settings.defaultRirUrl === "string" ? settings.defaultRirUrl.trim().slice(0, 2000) : "";
+  if (defaultRirUrl && !isHttpUrl(defaultRirUrl)) {
+    throw new Error("默认 RIR 地址必须是 http 或 https 地址");
+  }
+  return {
+    llmProviders: uniqueProviders,
+    activeLlmProviderId: activeProvider.id,
+    searchHistoryLimit,
+    shortcuts,
+    defaultRirUrl,
+  };
+}
+
+function getRuntimeAiConfig(): ReturnType<typeof getAiConfig> {
+  const config = getAiConfig();
+  const settings = readAppSettings();
+  const activeProvider = settings.llmProviders.find((provider) => provider.id === settings.activeLlmProviderId);
+  if (!activeProvider || !isValidLlmProvider(activeProvider)) {
+    return config;
+  }
+  return {
+    ...config,
+    deepseekApiKey: activeProvider.apiKey,
+    deepseekModel: activeProvider.model,
+    deepseekBaseUrl: activeProvider.baseUrl,
+  };
+}
+
+function validateLlmProviderForTest(value: unknown): LlmProviderSettings {
+  const provider = normalizeStoredProvider(value);
+  if (!provider || !isValidLlmProvider(provider)) {
+    throw new Error("LLM 配置无效，请填写 API 地址、模型和 API 密钥");
+  }
+  return provider;
+}
 
 const platform = getCurrentPlatform();
 const DEFAULTFILEPATH: string[] = [];
@@ -127,7 +270,7 @@ const createWindow = (): void => {
   }
 
   IPCRegister(win);
-  registerAiIpc();
+  registerAiIpc(getRuntimeAiConfig);
 };
 
 /** 注册主窗口所需的文件、缓存与图片操作 IPC。 */
@@ -254,13 +397,65 @@ function writeSearchHistory(state: SearchHistoryState): void {
   store.set(SEARCH_HISTORY_POINTER_KEY, state.pointer);
 }
 
+function trimSearchHistory(limit: number): void {
+  const state = readSearchHistory();
+  if (state.entries.length <= limit) {
+    return;
+  }
+  state.entries = state.entries.slice(-limit);
+  state.pointer = state.entries.length - 1;
+  writeSearchHistory(state);
+}
+
 function IPCRegister(currentWin: BrowserWindow): void {
+  ipcMain.handle("getSettings", () => readAppSettings());
+
+  ipcMain.handle("saveSettings", async (_event, rawSettings: unknown) => {
+    const settings = normalizeSettingsForSave(rawSettings);
+    store.set(APP_SETTINGS_KEY, settings);
+    trimSearchHistory(settings.searchHistoryLimit);
+    // 让下一次 AI 请求按新激活的供应商重新创建客户端。
+    await closeAiRuntime();
+    return settings;
+  });
+
+  ipcMain.handle("testLlmConnection", async (_event, rawProvider: unknown) => {
+    try {
+      const provider = validateLlmProviderForTest(rawProvider);
+      const response = await net.fetch(`${provider.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "user", content: "Reply with OK." }],
+          max_tokens: 1,
+          stream: false,
+        }),
+      });
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0, 300);
+        return { ok: false, message: `连接失败（${response.status}）：${detail}` };
+      }
+      return { ok: true, message: "连接成功" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { ok: false, message };
+    }
+  });
+
   ipcMain.handle("getSearchHistory", () => readSearchHistory());
 
   ipcMain.handle("appendSearchHistory", (_event, rawEntry: unknown) => {
     const entry = validateSearchHistoryEntry(rawEntry);
     const state = readSearchHistory();
     state.entries.push(entry);
+    const limit = readAppSettings().searchHistoryLimit;
+    if (state.entries.length > limit) {
+      state.entries = state.entries.slice(-limit);
+    }
     state.pointer = state.entries.length - 1;
     writeSearchHistory(state);
     return state;

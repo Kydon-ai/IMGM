@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 import { assertDeepSeekConfigured, getAiConfig } from "./config";
+import type { AiConfig } from "./config";
 import { DeepSeekClient } from "./deepseek-client";
 import { SqliteImageStore } from "./sqlite-image-store";
 import { ImageRagService, ImageRetriever } from "./rag-workflow";
@@ -13,8 +14,8 @@ type AiRuntime = {
 let runtimePromise: Promise<AiRuntime> | null = null;
 
 /** 延迟初始化 DeepSeek、SQLite 和 LangGraph 运行时。 */
-async function createRuntime(): Promise<AiRuntime> {
-  const config = getAiConfig();
+async function createRuntime(resolveConfig: () => AiConfig): Promise<AiRuntime> {
+  const config = resolveConfig();
   assertDeepSeekConfigured(config);
   const store = new SqliteImageStore({ databasePath: config.imageDbPath });
   const model = new DeepSeekClient(config);
@@ -28,9 +29,9 @@ async function createRuntime(): Promise<AiRuntime> {
 }
 
 /** 获取可复用的 AI 运行时，失败后允许下一次请求重试。 */
-async function getRuntime(): Promise<AiRuntime> {
+async function getRuntime(resolveConfig: () => AiConfig): Promise<AiRuntime> {
   if (!runtimePromise) {
-    runtimePromise = createRuntime().catch((error) => {
+    runtimePromise = createRuntime(resolveConfig).catch((error) => {
       runtimePromise = null;
       throw error;
     });
@@ -54,12 +55,12 @@ function validateRequest(value: unknown): AiChatRequest {
 }
 
 /** 注册 AI 对话 IPC，并把检索和回答进度推送给请求页面。 */
-export function registerAiIpc(): void {
+export function registerAiIpc(resolveConfig: () => AiConfig = getAiConfig): void {
   ipcMain.handle("aiAsk", async (event, rawRequest: unknown) => {
     const request = validateRequest(rawRequest);
     const emit = (chatEvent: AiChatEvent): void => event.sender.send("aiChatEvent", chatEvent);
     try {
-      const runtime = await getRuntime();
+      const runtime = await getRuntime(resolveConfig);
       const response = await runtime.service.ask(request, emit);
       emit({ requestId: request.requestId, type: "done" });
       return response;

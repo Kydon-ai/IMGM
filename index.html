@@ -1644,6 +1644,505 @@
             left: 62px;
         }
 
+        .settings-popover {
+            position: fixed;
+            z-index: 1200;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            width: auto;
+            padding: 24px;
+            border: 0;
+            border-radius: 0;
+            background: rgba(15, 24, 42, 0.38);
+            box-shadow: none;
+        }
+
+        .settings-popover[hidden] {
+            display: none;
+        }
+
+        .settings-dialog-backdrop {
+            position: absolute;
+            inset: 0;
+        }
+
+        .settings-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: min(900px, calc(100vw - 48px));
+            height: min(650px, calc(100vh - 48px));
+            min-height: 480px;
+            overflow: hidden;
+            border: 1px solid #dce4f0;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(23, 39, 72, 0.28);
+        }
+
+        .settings-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 68px;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e8edf4;
+            background: #fff;
+        }
+
+        .settings-dialog-kicker {
+            margin: 0 0 2px;
+            color: #7c8aa2;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .settings-dialog-header h2 {
+            margin: 0;
+            color: #25324a;
+            font-size: 19px;
+        }
+
+        .settings-close {
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 8px;
+            color: #65738b;
+            background: #f1f4f9;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .settings-close:hover {
+            color: #2f5ae0;
+            background: #eaf0ff;
+        }
+
+        .settings-dialog-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .settings-menu {
+            flex: 0 0 178px;
+            padding: 14px 10px;
+            background: #f5f7fa;
+        }
+
+        .settings-menu-item {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 40px;
+            margin-bottom: 4px;
+            padding: 0 12px;
+            gap: 9px;
+            border: 0;
+            border-radius: 9px;
+            color: #596981;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        .settings-menu-item:hover {
+            color: #304a98;
+            background: #e9eef8;
+        }
+
+        .settings-menu-item.active {
+            color: #2f5ae0;
+            background: #dfe7fb;
+            font-weight: 600;
+        }
+
+        .settings-menu-icon {
+            display: grid;
+            flex: 0 0 18px;
+            place-items: center;
+            width: 18px;
+            height: 18px;
+            color: currentColor;
+            font-size: 15px;
+        }
+
+        .settings-menu-icon svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.6;
+        }
+
+        .settings-content {
+            flex: 1;
+            min-width: 0;
+            overflow-y: auto;
+            padding: 24px 28px;
+            background: #fff;
+        }
+
+        .settings-section[hidden] {
+            display: none;
+        }
+
+        .settings-section-header {
+            margin-bottom: 20px;
+        }
+
+        .settings-section-header h3 {
+            margin: 0 0 6px;
+            color: #263957;
+            font-size: 18px;
+        }
+
+        .settings-section-header p {
+            margin: 0;
+            color: #8190a7;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .settings-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .settings-overview-card {
+            padding: 14px;
+            border: 1px solid #e3e9f2;
+            border-radius: 10px;
+            background: #f8faff;
+        }
+
+        .settings-overview-card span {
+            display: block;
+            margin-bottom: 6px;
+            color: #8190a7;
+            font-size: 11px;
+        }
+
+        .settings-overview-card strong {
+            display: block;
+            overflow: hidden;
+            color: #334a78;
+            font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .settings-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px 18px;
+        }
+
+        .settings-field {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 6px;
+            color: #53627a;
+            font-size: 12px;
+        }
+
+        .settings-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .settings-field input,
+        .settings-field select {
+            width: 100%;
+            min-height: 36px;
+            padding: 7px 10px;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            outline: 0;
+            color: #2d3d5a;
+            background: #fbfcfe;
+            font-size: 12px;
+        }
+
+        .settings-field input:focus,
+        .settings-field select:focus,
+        .shortcut-input:focus {
+            border-color: #8fa8f4;
+            box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.12);
+        }
+
+        .settings-field input[type="number"] {
+            max-width: 160px;
+        }
+
+        .settings-field-description {
+            margin: -1px 0 0;
+            color: #94a0b2;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .settings-input-with-action {
+            display: flex;
+            min-width: 0;
+        }
+
+        .settings-input-with-action input {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .settings-input-action {
+            flex: 0 0 auto;
+            min-width: 54px;
+            border: 1px solid #dbe3ef;
+            border-left: 0;
+            border-radius: 0 8px 8px 0;
+            color: #5670bb;
+            background: #f1f5ff;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .settings-subsection-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 22px 0 10px;
+            color: #354766;
+            font-size: 13px;
+        }
+
+        .settings-provider-toolbar {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .settings-provider-toolbar .settings-field {
+            flex: 1;
+        }
+
+        .settings-action-button {
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid #ccd8f5;
+            border-radius: 8px;
+            color: #4263c1;
+            background: #f3f6ff;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .settings-action-button:hover:not(:disabled) {
+            border-color: #aebef8;
+            background: #e9efff;
+        }
+
+        .settings-action-button.primary {
+            border-color: #5b7cfa;
+            color: #fff;
+            background: #5b7cfa;
+        }
+
+        .settings-action-button.primary:hover:not(:disabled) {
+            background: #4664d8;
+        }
+
+        .settings-action-button:disabled {
+            cursor: wait;
+            opacity: 0.55;
+        }
+
+        .llm-provider-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .llm-provider-card {
+            padding: 15px;
+            border: 1px solid #e0e7f2;
+            border-radius: 11px;
+            background: #fbfcff;
+        }
+
+        .llm-provider-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 13px;
+        }
+
+        .llm-provider-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #304263;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .llm-provider-card-title input {
+            width: 150px;
+            min-height: 30px;
+            padding: 4px 8px;
+            border: 1px solid #dbe3ef;
+            border-radius: 7px;
+            color: #304263;
+            background: #fff;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .llm-provider-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .settings-check-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #697890;
+            font-size: 11px;
+        }
+
+        .settings-delete-button {
+            border: 0;
+            color: #a36872;
+            background: transparent;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .settings-delete-button:hover {
+            color: #c23f50;
+        }
+
+        .llm-provider-card .settings-form-grid {
+            gap: 11px 14px;
+        }
+
+        .llm-provider-card-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 13px;
+        }
+
+        .llm-provider-status,
+        .settings-status {
+            min-height: 16px;
+            color: #7d8ba2;
+            font-size: 11px;
+        }
+
+        .llm-provider-status.success,
+        .settings-status.success {
+            color: #229b6b;
+        }
+
+        .llm-provider-status.error,
+        .settings-status.error {
+            color: #c34d5c;
+        }
+
+        .shortcut-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .shortcut-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 190px;
+            align-items: center;
+            gap: 18px;
+            padding: 11px 0;
+            border-bottom: 1px solid #edf1f6;
+        }
+
+        .shortcut-row:last-child {
+            border-bottom: 0;
+        }
+
+        .shortcut-copy strong {
+            display: block;
+            margin-bottom: 3px;
+            color: #354766;
+            font-size: 12px;
+        }
+
+        .shortcut-copy span {
+            color: #919db0;
+            font-size: 11px;
+        }
+
+        .shortcut-input {
+            width: 100%;
+            min-height: 34px;
+            padding: 6px 9px;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            outline: 0;
+            color: #3e548d;
+            background: #fbfcfe;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .settings-dialog-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 62px;
+            padding: 12px 20px;
+            gap: 10px;
+            border-top: 1px solid #e8edf4;
+            background: #fff;
+        }
+
+        .settings-dialog-footer .settings-status {
+            flex: 1;
+        }
+
+        @media (max-width: 760px) {
+            .settings-panel {
+                width: calc(100vw - 24px);
+                height: calc(100vh - 24px);
+            }
+
+            .settings-menu {
+                flex-basis: 132px;
+            }
+
+            .settings-content {
+                padding: 20px 16px;
+            }
+
+            .settings-form-grid,
+            .settings-overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-field.full {
+                grid-column: auto;
+            }
+        }
+
         .embedding-index-dialog {
             position: fixed;
             z-index: 1000;
@@ -1787,26 +2286,137 @@
             </span>
             <span class="imgm-nav-label">设置</span>
         </button>
-        <div id="settings-popover" class="settings-popover" hidden>
-            <div class="settings-popover-header">
-                <span>设置</span>
-                <button id="settings-close" class="settings-close" type="button" aria-label="关闭设置">×</button>
-            </div>
-            <div class="settings-row">
-                <span>当前图片目录</span>
-                <strong id="settings-path">未选择</strong>
-            </div>
-            <div class="settings-row">
-                <div class="settings-toggle-copy">
-                    <span class="settings-toggle-title">终端日志转发</span>
-                    <span class="settings-toggle-description">复制渲染进程的 console 输出</span>
+        <div id="settings-popover" class="settings-popover" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div class="settings-dialog-backdrop" data-settings-close></div>
+            <section class="settings-panel">
+                <header class="settings-dialog-header">
+                    <div>
+                        <p class="settings-dialog-kicker">IMGM SETTINGS</p>
+                        <h2 id="settings-title">设置</h2>
+                    </div>
+                    <button id="settings-close" class="settings-close" type="button" aria-label="关闭设置">×</button>
+                </header>
+                <div class="settings-dialog-body">
+                    <nav class="settings-menu" aria-label="设置分类">
+                        <button class="settings-menu-item active" type="button" data-settings-tab="general">
+                            <span class="settings-menu-icon" aria-hidden="true">⚙</span>
+                            <span>通用</span>
+                        </button>
+                        <button class="settings-menu-item" type="button" data-settings-tab="llm">
+                            <span class="settings-menu-icon" aria-hidden="true">✦</span>
+                            <span>LLM 设置</span>
+                        </button>
+                        <button class="settings-menu-item" type="button" data-settings-tab="library">
+                            <span class="settings-menu-icon" aria-hidden="true">▣</span>
+                            <span>图片库配置</span>
+                        </button>
+                        <button class="settings-menu-item" type="button" data-settings-tab="shortcuts">
+                            <span class="settings-menu-icon" aria-hidden="true">⌨</span>
+                            <span>快捷键</span>
+                        </button>
+                        <button class="settings-menu-item" type="button" data-settings-tab="rir">
+                            <span class="settings-menu-icon" aria-hidden="true">↗</span>
+                            <span>RIR 配置</span>
+                        </button>
+                    </nav>
+                    <div class="settings-content">
+                        <section class="settings-section" data-settings-section="general">
+                            <div class="settings-section-header">
+                                <h3>通用设置</h3>
+                                <p>管理当前应用的运行状态与常用选项。</p>
+                            </div>
+                            <div class="settings-overview-grid">
+                                <div class="settings-overview-card">
+                                    <span>当前激活的 LLM</span>
+                                    <strong id="settings-active-llm">未配置</strong>
+                                </div>
+                                <div class="settings-overview-card">
+                                    <span>搜索结果缓存上限</span>
+                                    <strong id="settings-history-limit-summary">50 条</strong>
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <span>当前图片目录</span>
+                                <strong id="settings-path">未选择</strong>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-toggle-copy">
+                                    <span class="settings-toggle-title">终端日志转发</span>
+                                    <span class="settings-toggle-description">复制渲染进程的 console 输出</span>
+                                </div>
+                                <label class="settings-switch" aria-label="开关终端日志转发">
+                                    <input id="forward-renderer-console" type="checkbox" checked>
+                                    <span class="settings-switch-track" aria-hidden="true"></span>
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="settings-section" data-settings-section="llm" hidden>
+                            <div class="settings-section-header">
+                                <h3>LLM 设置</h3>
+                                <p>支持多个 OpenAI 兼容协议供应商，激活的配置会用于意图解析和聊天回答。</p>
+                            </div>
+                            <div class="settings-provider-toolbar">
+                                <label class="settings-field">
+                                    <span>当前激活配置</span>
+                                    <select id="llm-active-provider" aria-label="当前激活的 LLM 配置"></select>
+                                </label>
+                                <button id="llm-add-provider" class="settings-action-button" type="button">+ 添加供应商</button>
+                            </div>
+                            <div id="llm-provider-list" class="llm-provider-list"></div>
+                            <p id="llm-settings-status" class="settings-status" role="status"></p>
+                        </section>
+
+                        <section class="settings-section" data-settings-section="library" hidden>
+                            <div class="settings-section-header">
+                                <h3>图片库配置</h3>
+                                <p>控制目录扫描和 AI 搜索结果在本地保留的历史记录数量。</p>
+                            </div>
+                            <div class="settings-form-grid">
+                                <label class="settings-field">
+                                    <span>搜索结果缓存数量上限</span>
+                                    <input id="search-history-limit" type="number" min="1" max="500" step="1" inputmode="numeric">
+                                    <span class="settings-field-description">超过上限后会自动删除最旧的搜索结果记录。</span>
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="settings-section" data-settings-section="shortcuts" hidden>
+                            <div class="settings-section-header">
+                                <h3>快捷键</h3>
+                                <p>点击输入框后按下组合键即可设置，按 Esc 清空当前快捷键。</p>
+                            </div>
+                            <div id="settings-shortcut-list" class="shortcut-list">
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>开始搜图</strong><span>扫描当前选定的图片目录</span></div><input class="shortcut-input" data-shortcut-action="startSearch" readonly aria-label="开始搜图快捷键"></div>
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>刷新</strong><span>刷新当前图片列表</span></div><input class="shortcut-input" data-shortcut-action="refreshGallery" readonly aria-label="刷新快捷键"></div>
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>索引图片</strong><span>打开图片索引管理弹窗</span></div><input class="shortcut-input" data-shortcut-action="openImageIndex" readonly aria-label="索引图片快捷键"></div>
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>上一个缓存</strong><span>查看上一次搜索结果</span></div><input class="shortcut-input" data-shortcut-action="previousCache" readonly aria-label="上一个缓存快捷键"></div>
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>下一个缓存</strong><span>查看下一次搜索结果</span></div><input class="shortcut-input" data-shortcut-action="nextCache" readonly aria-label="下一个缓存快捷键"></div>
+                                <div class="shortcut-row"><div class="shortcut-copy"><strong>切换菜单栏</strong><span>在图片库、RIR 和 AI 助手之间切换</span></div><input class="shortcut-input" data-shortcut-action="switchMenu" readonly aria-label="切换菜单栏快捷键"></div>
+                            </div>
+                        </section>
+
+                        <section class="settings-section" data-settings-section="rir" hidden>
+                            <div class="settings-section-header">
+                                <h3>RIR 配置</h3>
+                                <p>设置后，打开远程 RIR 模块时会自动填入该地址。</p>
+                            </div>
+                            <div class="settings-form-grid">
+                                <label class="settings-field full">
+                                    <span>默认 RIR 地址</span>
+                                    <input id="default-rir-url" type="url" placeholder="https://www.example.com:5173">
+                                    <span class="settings-field-description">请输入可访问的 http 或 https 地址，不填写则保持空白。</span>
+                                </label>
+                            </div>
+                        </section>
+                    </div>
                 </div>
-                <label class="settings-switch" aria-label="开关终端日志转发">
-                    <input id="forward-renderer-console" type="checkbox" checked>
-                    <span class="settings-switch-track" aria-hidden="true"></span>
-                </label>
-            </div>
-            <p class="settings-note">更多界面和检索选项将在这里集中管理。</p>
+                <footer class="settings-dialog-footer">
+                    <span id="settings-status" class="settings-status" role="status"></span>
+                    <button id="settings-cancel" class="settings-action-button" type="button">取消</button>
+                    <button id="settings-save" class="settings-action-button primary" type="button">保存设置</button>
+                </footer>
+            </section>
         </div>
     </aside>
 

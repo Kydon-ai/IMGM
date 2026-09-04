@@ -25,6 +25,13 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="ai-results-close"/);
   assert.match(html, /<form id="ai-form" class="ai-composer">\s*<section id="ai-results-section" class="ai-results-section">/);
   assert.match(html, /<div class="ai-input-shell">\s*<textarea id="ai-input"[\s\S]*<button id="ai-send"[\s\S]*<svg/);
+  assert.match(html, /id="settings-popover"[\s\S]*data-settings-tab="llm"/);
+  assert.match(html, /id="llm-active-provider"/);
+  assert.match(html, /id="llm-provider-list"/);
+  assert.match(html, /id="search-history-limit"/);
+  assert.match(html, /data-shortcut-action="startSearch"/);
+  assert.match(html, /data-shortcut-action="switchMenu"/);
+  assert.match(html, /id="default-rir-url"/);
   assert.equal((html.match(/<div class="img-item">/g) || []).length, 12, "图片展示槽位应为 12 个");
 
   const domSource = fs.readFileSync(path.resolve(process.cwd(), "src/dom.ts"), "utf8");
@@ -33,12 +40,17 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(domSource, /rir: \{[^}]*pageSize: 12/);
   assert.match(domSource, /activateLatestDirectorySearch/);
   assert.match(domSource, /appendSearchHistory/);
+  assert.match(domSource, /bindSettingsDialog/);
+  assert.match(domSource, /testLlmConnection/);
+  assert.match(domSource, /defaultRirUrl/);
 
   const preloadSource = fs.readFileSync(path.resolve(process.cwd(), "src/preload.ts"), "utf8");
   assert.match(preloadSource, /local: \{[^}]*pageSize: 8/);
   assert.match(preloadSource, /rir: \{[^}]*pageSize: 12/);
   assert.match(preloadSource, /scanImageIndexGroups/);
   assert.match(preloadSource, /applyImageIndexSelection/);
+  assert.match(preloadSource, /getSettings/);
+  assert.match(preloadSource, /saveSettings/);
 
   const chatSource = fs.readFileSync(path.resolve(process.cwd(), "src/ai-chat.ts"), "utf8");
   assert.match(chatSource, /setTimeout\(\(\) => \{[\s\S]*?5000/);

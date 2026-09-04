@@ -42,6 +42,43 @@ type SearchHistoryState = {
   pointer: number;
 };
 
+type SettingsProvider = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+  enabled: boolean;
+};
+
+type SettingsSnapshot = {
+  llmProviders: SettingsProvider[];
+  activeLlmProviderId: string;
+  searchHistoryLimit: number;
+  shortcuts: {
+    startSearch: string;
+    refreshGallery: string;
+    openImageIndex: string;
+    previousCache: string;
+    nextCache: string;
+    switchMenu: string;
+  };
+  defaultRirUrl: string;
+};
+
+type ShortcutAction = keyof SettingsSnapshot["shortcuts"];
+
+const DEFAULT_SHORTCUTS: SettingsSnapshot["shortcuts"] = {
+  startSearch: "Ctrl+Enter",
+  refreshGallery: "Ctrl+R",
+  openImageIndex: "Ctrl+I",
+  previousCache: "Alt+ArrowLeft",
+  nextCache: "Alt+ArrowRight",
+  switchMenu: "Ctrl+Shift+M",
+};
+
+let currentAppSettings: SettingsSnapshot | null = null;
+
 /** 获取当前图片列表所属模块，缺省时使用本地图片库。 */
 async function getCurrentGalleryMode(): Promise<GalleryMode> {
   const mode = await window.electron.getData<string>("mode");
@@ -104,7 +141,8 @@ async function moveToSearchHistory(delta: -1 | 1): Promise<void> {
 document.addEventListener("DOMContentLoaded", async () => {
   bindCopyActions();
   bindSidebarNavigation();
-  bindSettingsPopover();
+  await bindSettingsDialog();
+  bindGlobalShortcuts();
   bindEmbeddingIndex();
   window.addEventListener("search-history-changed", (event) => {
     const state = (event as CustomEvent<SearchHistoryState>).detail;
@@ -469,13 +507,250 @@ function bindSidebarNavigation(): void {
   });
 }
 
-/** 打开或关闭侧栏左下角的设置浮层。 */
-function bindSettingsPopover(): void {
+/** 打开完整设置弹窗，并管理设置草稿、供应商和快捷键配置。 */
+async function bindSettingsDialog(): Promise<void> {
   const settingsButton = getElementByIdOrThrow<HTMLButtonElement>("settings-button");
   const settingsPopover = getElementByIdOrThrow<HTMLDivElement>("settings-popover");
   const closeButton = getElementByIdOrThrow<HTMLButtonElement>("settings-close");
+  const cancelButton = getElementByIdOrThrow<HTMLButtonElement>("settings-cancel");
+  const saveButton = getElementByIdOrThrow<HTMLButtonElement>("settings-save");
   const settingsPath = getElementByIdOrThrow<HTMLElement>("settings-path");
   const consoleToggle = getElementByIdOrThrow<HTMLInputElement>("forward-renderer-console");
+  const settingsStatus = getElementByIdOrThrow<HTMLElement>("settings-status");
+  const activeProviderSelect = getElementByIdOrThrow<HTMLSelectElement>("llm-active-provider");
+  const providerList = getElementByIdOrThrow<HTMLDivElement>("llm-provider-list");
+  const providerStatus = getElementByIdOrThrow<HTMLElement>("llm-settings-status");
+  const historyLimitInput = getElementByIdOrThrow<HTMLInputElement>("search-history-limit");
+  const historyLimitSummary = getElementByIdOrThrow<HTMLElement>("settings-history-limit-summary");
+  const activeLlmSummary = getElementByIdOrThrow<HTMLElement>("settings-active-llm");
+  const defaultRirInput = getElementByIdOrThrow<HTMLInputElement>("default-rir-url");
+  const rirParseInput = getElementByIdOrThrow<HTMLInputElement>("rir-parse-input");
+  let loading = false;
+
+  const setStatus = (element: HTMLElement, message: string, type: "success" | "error" | "" = ""): void => {
+    element.textContent = message;
+    element.classList.toggle("success", type === "success");
+    element.classList.toggle("error", type === "error");
+  };
+
+  const getProviderField = (card: HTMLElement, field: string): HTMLInputElement | null =>
+    card.querySelector<HTMLInputElement>(`[data-provider-field="${field}"]`);
+
+  const readProviderCard = (card: HTMLElement): SettingsProvider => ({
+    id: card.dataset.providerId || crypto.randomUUID(),
+    name: getProviderField(card, "name")?.value.trim() || "未命名供应商",
+    baseUrl: getProviderField(card, "baseUrl")?.value.trim() || "",
+    model: getProviderField(card, "model")?.value.trim() || "",
+    apiKey: getProviderField(card, "apiKey")?.value || "",
+    enabled: getProviderField(card, "enabled")?.checked ?? true,
+  });
+
+  const collectProviderCards = (): SettingsProvider[] =>
+    Array.from(providerList.querySelectorAll<HTMLElement>(".llm-provider-card")).map(readProviderCard);
+
+  const updateProviderSelector = (selectedId = activeProviderSelect.value): void => {
+    const providers = collectProviderCards();
+    activeProviderSelect.replaceChildren();
+    providers.forEach((provider) => {
+      const option = document.createElement("option");
+      option.value = provider.id;
+      option.textContent = provider.name || "未命名供应商";
+      activeProviderSelect.appendChild(option);
+    });
+    if (providers.some((provider) => provider.id === selectedId)) {
+      activeProviderSelect.value = selectedId;
+    } else if (providers[0]) {
+      activeProviderSelect.value = providers[0].id;
+    }
+  };
+
+  const createProviderField = (labelText: string, field: string, value: string, full = false): HTMLLabelElement => {
+    const label = document.createElement("label");
+    label.className = `settings-field${full ? " full" : ""}`;
+    const title = document.createElement("span");
+    title.textContent = labelText;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = value;
+    input.dataset.providerField = field;
+    label.append(title, input);
+    return label;
+  };
+
+  const renderProviders = (providers: SettingsProvider[], selectedId: string): void => {
+    providerList.replaceChildren();
+    providers.forEach((provider) => {
+      const card = document.createElement("article");
+      card.className = "llm-provider-card";
+      card.dataset.providerId = provider.id;
+
+      const header = document.createElement("div");
+      header.className = "llm-provider-card-header";
+      const title = document.createElement("div");
+      title.className = "llm-provider-card-title";
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.value = provider.name;
+      nameInput.dataset.providerField = "name";
+      nameInput.setAttribute("aria-label", "供应商名称");
+      title.appendChild(nameInput);
+
+      const actions = document.createElement("div");
+      actions.className = "llm-provider-card-actions";
+      const enabledLabel = document.createElement("label");
+      enabledLabel.className = "settings-check-label";
+      const enabled = document.createElement("input");
+      enabled.type = "checkbox";
+      enabled.checked = provider.enabled;
+      enabled.dataset.providerField = "enabled";
+      enabledLabel.append(enabled, document.createTextNode("启用"));
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "settings-delete-button";
+      deleteButton.textContent = "删除";
+      deleteButton.disabled = providers.length <= 1;
+      deleteButton.addEventListener("click", () => {
+        if (providerList.children.length <= 1) {
+          setStatus(providerStatus, "至少保留一个供应商配置", "error");
+          return;
+        }
+        card.remove();
+        updateProviderSelector();
+      });
+      actions.append(enabledLabel, deleteButton);
+      header.append(title, actions);
+
+      const grid = document.createElement("div");
+      grid.className = "settings-form-grid";
+      grid.append(
+        createProviderField("API 地址", "baseUrl", provider.baseUrl),
+        createProviderField("模型名称", "model", provider.model),
+      );
+
+      const keyLabel = document.createElement("label");
+      keyLabel.className = "settings-field full";
+      const keyTitle = document.createElement("span");
+      keyTitle.textContent = "API 密钥";
+      const keyWrapper = document.createElement("span");
+      keyWrapper.className = "settings-input-with-action";
+      const keyInput = document.createElement("input");
+      keyInput.type = "password";
+      keyInput.value = provider.apiKey;
+      keyInput.dataset.providerField = "apiKey";
+      keyInput.autocomplete = "off";
+      const toggleKey = document.createElement("button");
+      toggleKey.type = "button";
+      toggleKey.className = "settings-input-action";
+      toggleKey.textContent = "显示";
+      toggleKey.addEventListener("click", () => {
+        const visible = keyInput.type === "text";
+        keyInput.type = visible ? "password" : "text";
+        toggleKey.textContent = visible ? "显示" : "隐藏";
+      });
+      keyWrapper.append(keyInput, toggleKey);
+      keyLabel.append(keyTitle, keyWrapper);
+      grid.appendChild(keyLabel);
+
+      const footer = document.createElement("div");
+      footer.className = "llm-provider-card-footer";
+      const testButton = document.createElement("button");
+      testButton.type = "button";
+      testButton.className = "settings-action-button";
+      testButton.textContent = "测试连通性";
+      const testStatus = document.createElement("span");
+      testStatus.className = "llm-provider-status";
+      testButton.addEventListener("click", async () => {
+        testButton.disabled = true;
+        setStatus(testStatus, "测试中…");
+        try {
+          const result = await window.electron.testLlmConnection(readProviderCard(card));
+          setStatus(testStatus, result.message, result.ok ? "success" : "error");
+        } catch (error) {
+          setStatus(testStatus, error instanceof Error ? error.message : String(error), "error");
+        } finally {
+          testButton.disabled = false;
+        }
+      });
+      footer.append(testButton, testStatus);
+
+      nameInput.addEventListener("input", () => updateProviderSelector(activeProviderSelect.value));
+      card.append(header, grid, footer);
+      providerList.appendChild(card);
+    });
+    updateProviderSelector(selectedId);
+  };
+
+  const renderSettings = (settings: SettingsSnapshot): void => {
+    currentAppSettings = {
+      ...settings,
+      llmProviders: settings.llmProviders.map((provider) => ({ ...provider })),
+      shortcuts: { ...settings.shortcuts },
+    };
+    renderProviders(currentAppSettings.llmProviders, currentAppSettings.activeLlmProviderId);
+    historyLimitInput.value = String(currentAppSettings.searchHistoryLimit);
+    historyLimitSummary.textContent = `${currentAppSettings.searchHistoryLimit} 条`;
+    const activeProvider = currentAppSettings.llmProviders.find((provider) => provider.id === currentAppSettings?.activeLlmProviderId);
+    activeLlmSummary.textContent = activeProvider?.name || "未配置";
+    defaultRirInput.value = currentAppSettings.defaultRirUrl;
+    rirParseInput.value = currentAppSettings.defaultRirUrl;
+    document.querySelectorAll<HTMLInputElement>("[data-shortcut-action]").forEach((input) => {
+      const action = input.dataset.shortcutAction as ShortcutAction;
+      input.value = currentAppSettings?.shortcuts[action] || "";
+    });
+  };
+
+  const collectSettings = (): SettingsSnapshot => {
+    if (!currentAppSettings) {
+      throw new Error("设置尚未加载完成");
+    }
+    const providers = collectProviderCards();
+    if (new Set(providers.map((provider) => provider.id)).size !== providers.length) {
+      throw new Error("供应商配置 ID 重复，请重新打开设置");
+    }
+    const shortcutValues = { ...currentAppSettings.shortcuts };
+    document.querySelectorAll<HTMLInputElement>("[data-shortcut-action]").forEach((input) => {
+      const action = input.dataset.shortcutAction as ShortcutAction;
+      shortcutValues[action] = input.value.trim();
+    });
+    const configuredShortcuts = Object.values(shortcutValues).filter(Boolean);
+    if (new Set(configuredShortcuts).size !== configuredShortcuts.length) {
+      throw new Error("快捷键不能重复，请重新设置");
+    }
+    const historyLimit = Number(historyLimitInput.value);
+    if (!Number.isInteger(historyLimit) || historyLimit < 1 || historyLimit > 500) {
+      throw new Error("搜索结果缓存上限必须是 1 到 500 之间的整数");
+    }
+    return {
+      llmProviders: providers,
+      activeLlmProviderId: activeProviderSelect.value,
+      searchHistoryLimit: historyLimit,
+      shortcuts: shortcutValues,
+      defaultRirUrl: defaultRirInput.value.trim(),
+    };
+  };
+
+  const loadSettings = async (): Promise<void> => {
+    if (loading) {
+      return;
+    }
+    loading = true;
+    try {
+      const [settings, path, consoleForwardingEnabled] = await Promise.all([
+        window.electron.getSettings(),
+        window.electron.getData<string>("scanPath"),
+        window.electron.getData<boolean>("forwardRendererConsole"),
+      ]);
+      renderSettings(settings);
+      settingsPath.textContent = path || "未选择";
+      consoleToggle.checked = consoleForwardingEnabled !== false;
+      setStatus(settingsStatus, "");
+      setStatus(providerStatus, "");
+    } catch (error) {
+      setStatus(settingsStatus, error instanceof Error ? error.message : String(error), "error");
+    } finally {
+      loading = false;
+    }
+  };
 
   const closePopover = (): void => {
     settingsPopover.hidden = true;
@@ -488,16 +763,63 @@ function bindSettingsPopover(): void {
     settingsButton.setAttribute("aria-expanded", String(willOpen));
 
     if (willOpen) {
-      const [path, consoleForwardingEnabled] = await Promise.all([
-        window.electron.getData<string>("scanPath"),
-        window.electron.getData<boolean>("forwardRendererConsole"),
-      ]);
-      settingsPath.textContent = path || "未选择";
-      consoleToggle.checked = consoleForwardingEnabled !== false;
+      await loadSettings();
+      closeButton.focus();
     }
   });
 
   closeButton.addEventListener("click", closePopover);
+  cancelButton.addEventListener("click", closePopover);
+  settingsPopover.querySelector<HTMLElement>("[data-settings-close]")?.addEventListener("click", closePopover);
+
+  saveButton.addEventListener("click", async () => {
+    saveButton.disabled = true;
+    setStatus(settingsStatus, "保存中…");
+    try {
+      const settings = collectSettings();
+      const saved = await window.electron.saveSettings(settings);
+      renderSettings(saved);
+      currentAppSettings = saved;
+      historyLimitSummary.textContent = `${saved.searchHistoryLimit} 条`;
+      const activeProvider = saved.llmProviders.find((provider) => provider.id === saved.activeLlmProviderId);
+      activeLlmSummary.textContent = activeProvider?.name || "未配置";
+      setStatus(settingsStatus, "设置已保存", "success");
+      window.dispatchEvent(new CustomEvent("app-settings-changed", { detail: saved }));
+    } catch (error) {
+      setStatus(settingsStatus, error instanceof Error ? error.message : String(error), "error");
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>("[data-settings-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.settingsTab;
+      if (!target) {
+        return;
+      }
+      document.querySelectorAll<HTMLButtonElement>("[data-settings-tab]").forEach((item) => item.classList.toggle("active", item === tab));
+      document.querySelectorAll<HTMLElement>("[data-settings-section]").forEach((section) => {
+        section.hidden = section.dataset.settingsSection !== target;
+      });
+    });
+  });
+
+  getElementByIdOrThrow<HTMLButtonElement>("llm-add-provider").addEventListener("click", () => {
+    if (!currentAppSettings) {
+      return;
+    }
+    const providers = collectProviderCards();
+    providers.push({
+      id: crypto.randomUUID(),
+      name: "新供应商",
+      baseUrl: "https://api.openai.com/v1",
+      model: "",
+      apiKey: "",
+      enabled: true,
+    });
+    renderProviders(providers, activeProviderSelect.value);
+  });
 
   consoleToggle.addEventListener("change", async () => {
     const enabled = consoleToggle.checked;
@@ -507,6 +829,87 @@ function bindSettingsPopover(): void {
     } catch (error) {
       consoleToggle.checked = !enabled;
       console.error("保存终端日志开关失败:", error);
+    }
+  });
+
+  settingsPopover.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closePopover();
+    }
+  });
+
+  settingsPopover.hidden = true;
+  await loadSettings();
+}
+
+/** 将键盘事件规范化为设置页面使用的快捷键格式。 */
+function formatShortcutEvent(event: KeyboardEvent): string {
+  if (["Control", "Alt", "Shift", "Meta"].includes(event.key)) {
+    return "";
+  }
+  const modifiers: string[] = [];
+  if (event.ctrlKey) modifiers.push("Ctrl");
+  if (event.altKey) modifiers.push("Alt");
+  if (event.shiftKey) modifiers.push("Shift");
+  if (event.metaKey) modifiers.push("Meta");
+  const keyNames: Record<string, string> = {
+    " ": "Space",
+    Escape: "Esc",
+    ArrowUp: "ArrowUp",
+    ArrowDown: "ArrowDown",
+    ArrowLeft: "ArrowLeft",
+    ArrowRight: "ArrowRight",
+    Backspace: "Backspace",
+    Delete: "Delete",
+    Tab: "Tab",
+  };
+  const key = keyNames[event.key] || (event.key.length === 1 ? event.key.toUpperCase() : event.key);
+  return [...modifiers, key].join("+");
+}
+
+/** 执行设置中配置的应用级快捷键。 */
+function bindGlobalShortcuts(): void {
+  document.querySelectorAll<HTMLInputElement>("[data-shortcut-action]").forEach((input) => {
+    input.addEventListener("keydown", (event) => {
+      event.preventDefault();
+      input.value = event.key === "Escape" ? "" : formatShortcutEvent(event);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const settingsDialog = document.getElementById("settings-popover");
+    if (!currentAppSettings || (settingsDialog && !settingsDialog.hidden)) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (target?.matches("input, textarea, [contenteditable='true']")) {
+      return;
+    }
+    const shortcut = formatShortcutEvent(event);
+    if (!shortcut) {
+      return;
+    }
+    const action = (Object.keys(currentAppSettings.shortcuts) as ShortcutAction[]).find((key) => currentAppSettings?.shortcuts[key] === shortcut);
+    if (!action) {
+      return;
+    }
+    event.preventDefault();
+    if (action === "startSearch") {
+      getElementByIdOrThrow<HTMLButtonElement>("start-search").click();
+    } else if (action === "openImageIndex") {
+      getElementByIdOrThrow<HTMLButtonElement>("add-embedding").click();
+    } else if (action === "previousCache") {
+      getElementByIdOrThrow<HTMLButtonElement>("search-history-previous").click();
+    } else if (action === "nextCache") {
+      getElementByIdOrThrow<HTMLButtonElement>("search-history-next").click();
+    } else if (action === "switchMenu") {
+      const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>(".imgm-nav-item"));
+      const activeIndex = navItems.findIndex((item) => item.classList.contains("active"));
+      navItems[(activeIndex + 1 + navItems.length) % navItems.length]?.click();
+    } else if (action === "refreshGallery") {
+      void getCurrentGalleryMode().then((mode) => {
+        getElementByIdOrThrow<HTMLButtonElement>(mode === "rir" ? "rir-refresh-pic" : "refresh-pic").click();
+      });
     }
   });
 }
