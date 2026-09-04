@@ -35,6 +35,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resultsSection.hidden = true;
 
+  /** 让输入框随多行内容增长，达到上限后改为内部滚动。 */
+  function resizeInput(): void {
+    const maxHeight = 120;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, maxHeight)}px`;
+    input.style.overflowY = input.scrollHeight > maxHeight ? "auto" : "hidden";
+  }
+
+  resizeInput();
+
   /** 添加一条聊天气泡并滚动到底部。 */
   function appendMessage(role: ChatRole, content: string): HTMLElement {
     const wrapper = document.createElement("div");
@@ -160,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     history.push({ role: "user", content: message });
     appendMessage("user", message);
     input.value = "";
+    resizeInput();
     activeRequestId = crypto.randomUUID();
     assistantBubble = null;
     setBusy(true);
@@ -208,6 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     void submitMessage();
   });
+
+  input.addEventListener("input", resizeInput);
 
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {

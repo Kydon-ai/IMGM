@@ -22,6 +22,7 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="search-history-next"/);
   assert.match(html, /id="ai-results-close"/);
   assert.match(html, /<form id="ai-form" class="ai-composer">\s*<section id="ai-results-section" class="ai-results-section">/);
+  assert.match(html, /<div class="ai-input-shell">\s*<textarea id="ai-input"[\s\S]*<button id="ai-send"[\s\S]*<svg/);
   assert.equal((html.match(/<div class="img-item">/g) || []).length, 12, "图片展示槽位应为 12 个");
 
   const domSource = fs.readFileSync(path.resolve(process.cwd(), "src/dom.ts"), "utf8");
@@ -41,6 +42,7 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(chatSource, /setTimeout\(\(\) => \{[\s\S]*?5000/);
   assert.match(chatSource, /ai-replay-search/);
   assert.match(chatSource, /showResultsInMainGallery\(images\.slice\(\)\)/);
+  assert.match(chatSource, /function resizeInput\(\): void/);
   assert.match(domSource, /progress\.currentPath\.split/);
 
   assert.doesNotMatch(html, /rename-btn|改标签/);
