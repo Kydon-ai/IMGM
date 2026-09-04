@@ -24,6 +24,10 @@ files:
   - '!forge-packager-config.js'
 
 asar: true
+extraResources:
+  - from: data/models
+    to: models
+
 asarUnpack:
   - node_modules/sharp/**/*
   - node_modules/@img/**/*

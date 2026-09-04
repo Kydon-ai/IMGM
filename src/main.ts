@@ -16,6 +16,15 @@ import type { SearchHistoryEntry, SearchHistoryState } from "./types/search-hist
 
 const execFileAsync = promisify(execFile);
 const store = new Store();
+
+function configurePackagedModelCache(): void {
+  if (app.isPackaged && !process.env.IMAGE_MODEL_CACHE_DIR) {
+    process.env.IMAGE_MODEL_CACHE_DIR = path.join(process.resourcesPath, "models");
+  }
+}
+
+configurePackagedModelCache();
+
 const FORWARD_RENDERER_CONSOLE_KEY = "forwardRendererConsole";
 const LOCAL_TARGET_LIST_KEY = "localTargetList";
 const LOCAL_IMAGE_LIST_KEY = "localImgList";
