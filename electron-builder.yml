@@ -41,6 +41,7 @@ win:
         - x64
 
 linux:
+  maintainer: Kydon
   target:
     - target: deb
       arch:
