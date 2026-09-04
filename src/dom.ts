@@ -547,6 +547,15 @@ async function bindSettingsDialog(): Promise<void> {
   const collectProviderCards = (): SettingsProvider[] =>
     Array.from(providerList.querySelectorAll<HTMLElement>(".llm-provider-card")).map(readProviderCard);
 
+  const syncProviderActivation = (selectedId: string): void => {
+    providerList.querySelectorAll<HTMLElement>(".llm-provider-card").forEach((card) => {
+      const activation = getProviderField(card, "enabled");
+      if (activation) {
+        activation.checked = card.dataset.providerId === selectedId;
+      }
+    });
+  };
+
   const updateProviderSelector = (selectedId = activeProviderSelect.value): void => {
     const providers = collectProviderCards();
     activeProviderSelect.replaceChildren();
@@ -561,6 +570,7 @@ async function bindSettingsDialog(): Promise<void> {
     } else if (providers[0]) {
       activeProviderSelect.value = providers[0].id;
     }
+    syncProviderActivation(activeProviderSelect.value);
   };
 
   const createProviderField = (labelText: string, field: string, value: string, full = false): HTMLLabelElement => {
@@ -599,10 +609,18 @@ async function bindSettingsDialog(): Promise<void> {
       const enabledLabel = document.createElement("label");
       enabledLabel.className = "settings-check-label";
       const enabled = document.createElement("input");
-      enabled.type = "checkbox";
-      enabled.checked = provider.enabled;
+      enabled.type = "radio";
+      enabled.name = "llm-active-provider-radio";
+      enabled.checked = provider.id === selectedId;
       enabled.dataset.providerField = "enabled";
-      enabledLabel.append(enabled, document.createTextNode("启用"));
+      enabled.setAttribute("aria-label", `激活 ${provider.name}`);
+      enabled.addEventListener("change", () => {
+        if (enabled.checked) {
+          activeProviderSelect.value = provider.id;
+          syncProviderActivation(provider.id);
+        }
+      });
+      enabledLabel.append(enabled, document.createTextNode("激活"));
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "settings-delete-button";
@@ -804,6 +822,10 @@ async function bindSettingsDialog(): Promise<void> {
     });
   });
 
+  activeProviderSelect.addEventListener("change", () => {
+    syncProviderActivation(activeProviderSelect.value);
+  });
+
   getElementByIdOrThrow<HTMLButtonElement>("llm-add-provider").addEventListener("click", () => {
     if (!currentAppSettings) {
       return;
@@ -815,7 +837,7 @@ async function bindSettingsDialog(): Promise<void> {
       baseUrl: "https://api.openai.com/v1",
       model: "",
       apiKey: "",
-      enabled: true,
+      enabled: false,
     });
     renderProviders(providers, activeProviderSelect.value);
   });

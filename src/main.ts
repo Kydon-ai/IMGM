@@ -104,7 +104,16 @@ function readAppSettings(): AppSettings {
     ? Math.max(1, Math.min(500, rawLimit))
     : DEFAULT_SEARCH_HISTORY_LIMIT;
   const defaultRirUrl = typeof raw?.defaultRirUrl === "string" ? raw.defaultRirUrl.trim().slice(0, 2000) : "";
-  return { llmProviders, activeLlmProviderId, searchHistoryLimit, shortcuts, defaultRirUrl };
+  return {
+    llmProviders: llmProviders.map((provider) => ({
+      ...provider,
+      enabled: provider.id === activeLlmProviderId,
+    })),
+    activeLlmProviderId,
+    searchHistoryLimit,
+    shortcuts,
+    defaultRirUrl,
+  };
 }
 
 function normalizeSettingsForSave(value: unknown): AppSettings {
@@ -139,7 +148,10 @@ function normalizeSettingsForSave(value: unknown): AppSettings {
     throw new Error("默认 RIR 地址必须是 http 或 https 地址");
   }
   return {
-    llmProviders: uniqueProviders,
+    llmProviders: uniqueProviders.map((provider) => ({
+      ...provider,
+      enabled: provider.id === activeProvider.id,
+    })),
     activeLlmProviderId: activeProvider.id,
     searchHistoryLimit,
     shortcuts,

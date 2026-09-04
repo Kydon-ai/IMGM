@@ -46,6 +46,8 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(domSource, /bindSettingsDialog/);
   assert.match(domSource, /testLlmConnection/);
   assert.match(domSource, /defaultRirUrl/);
+  assert.match(domSource, /enabled\.type = "radio"/);
+  assert.match(domSource, /syncProviderActivation/);
 
   const preloadSource = fs.readFileSync(path.resolve(process.cwd(), "src/preload.ts"), "utf8");
   assert.match(preloadSource, /local: \{[^}]*pageSize: 8/);
@@ -54,6 +56,10 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(preloadSource, /applyImageIndexSelection/);
   assert.match(preloadSource, /getSettings/);
   assert.match(preloadSource, /saveSettings/);
+
+  const mainSource = fs.readFileSync(path.resolve(process.cwd(), "src/main.ts"), "utf8");
+  assert.match(mainSource, /enabled: provider\.id === activeLlmProviderId/);
+  assert.match(mainSource, /enabled: provider\.id === activeProvider\.id/);
 
   const chatSource = fs.readFileSync(path.resolve(process.cwd(), "src/ai-chat.ts"), "utf8");
   assert.match(chatSource, /setTimeout\(\(\) => \{[\s\S]*?5000/);
