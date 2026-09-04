@@ -2343,7 +2343,21 @@
         .embedding-index-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e6ebf3; }
         .embedding-index-footer button { min-width: 76px; }
         .embedding-index-apply { border-color: #5b7cfa; color: #fff; background: #5b7cfa; }
-        .embedding-index-apply:hover:not(:disabled) { background: #4269ef; }
+        .embedding-index-apply:hover:not(:disabled) {
+            border-color: #4269ef;
+            color: #fff;
+            background: #4269ef;
+        }
+        .embedding-index-apply:focus:not(:disabled) { color: #fff; }
+        .embedding-index-apply:focus-visible:not(:disabled) {
+            outline: 3px solid rgba(91, 124, 250, 0.28);
+            outline-offset: 2px;
+        }
+        .embedding-index-apply:active:not(:disabled) {
+            border-color: #304fc1;
+            color: #fff;
+            background: #304fc1;
+        }
 
         .embedding-index-progress {
             position: fixed;
