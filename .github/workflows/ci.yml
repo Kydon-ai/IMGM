@@ -31,5 +31,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev --include=optional --no-audit --no-fund
 
+      - name: Rebuild native modules for Electron
+        shell: pwsh
+        run: |
+          $electronVersion = node -p "require('./node_modules/electron/package.json').version"
+          npx --no-install electron-rebuild --force --which-module better-sqlite3 --version $electronVersion
+
       - name: Build and test
         run: npm test
