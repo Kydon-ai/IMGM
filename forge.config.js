@@ -5,7 +5,11 @@ const { ignore } = require('./forge-packager-config');
 module.exports = {
   packagerConfig: {
     name: 'IMGM', // 应用名称
-    asar: true, // 是否打包为asar
+    // sharp 的 .node 文件会被自动解包，但 Windows 运行时还需要同目录的
+    // libvips DLL；因此必须把 sharp 和 @img 的完整目录一起解包。
+    asar: {
+      unpack: '**/node_modules/{sharp,@img}/**/*',
+    },
     icon: './public/img/IMGM.ico', // 应用图标路径
     executableName: 'imgm', // 强制指定可执行文件名称（所有平台）
     // 排除开发数据、密钥、源码和测试，避免泄密并控制安装包体积。
