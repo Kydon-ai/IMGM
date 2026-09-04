@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+            build_args: --win nsis zip
+            artifact_paths: |
+              out/installer/*.exe
+              out/installer/*.zip
+          - name: linux
+            os: ubuntu-latest
+            build_args: --linux deb rpm
+            artifact_paths: |
+              out/installer/*.deb
+              out/installer/*.rpm
+          - name: macos
+            os: macos-latest
+            build_args: --mac dmg zip
+            artifact_paths: |
+              out/installer/*.dmg
+              out/installer/*.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional --no-audit --no-fund
+
+      - name: Build application
+        run: npm run build
+
+      - name: Rebuild native modules for Electron (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $electronVersion = node -p "require('./node_modules/electron/package.json').version"
+          npx --no-install electron-rebuild --force --which-module better-sqlite3 --version $electronVersion
+
+      - name: Rebuild native modules for Electron (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          electron_version="$(node -p "require('./node_modules/electron/package.json').version")"
+          npx --no-install electron-rebuild --force --which-module better-sqlite3 --version "$electron_version"
+
+      - name: Build platform packages
+        run: npx --no-install electron-builder ${{ matrix.build_args }}
+
+      - name: Give release assets unique names (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $files = @(
+            Get-ChildItem -LiteralPath "out/installer" -File -Filter "*.exe"
+            Get-ChildItem -LiteralPath "out/installer" -File -Filter "*.zip"
+          )
+          foreach ($file in $files) {
+            Rename-Item -LiteralPath $file.FullName -NewName "$($file.BaseName)-windows$($file.Extension)"
+          }
+
+      - name: Give release assets unique names (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          for file in out/installer/*.deb out/installer/*.rpm out/installer/*.dmg out/installer/*.zip; do
+            [ -e "$file" ] || continue
+            extension="${file##*.}"
+            base="${file%.*}"
+            mv "$file" "${base}-${{ matrix.name }}.${extension}"
+          done
+
+      - name: Upload platform artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.name }}
+          path: ${{ matrix.artifact_paths }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create or update GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mapfile -t assets < <(find release-assets -type f \( \
+            -name '*.exe' -o \
+            -name '*.zip' -o \
+            -name '*.deb' -o \
+            -name '*.rpm' -o \
+            -name '*.dmg' \
+          \) -print)
+
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release assets found"
+            exit 1
+          fi
+
+          if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --repo "$GH_REPO" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --repo "$GH_REPO" \
+              --title "IMGM $RELEASE_TAG" \
+              --generate-notes \
+              --verify-tag
+          fi
