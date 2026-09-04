@@ -49,7 +49,7 @@
     "make:forge": "npm run build && electron-forge make",
     "bingo": "npx electron-forge import && npm run make"
   },
-  "author": "LiuQidong",
-  "license": "ISC",
+  "author": "Kydon",
+  "license": "MIT",
   "description": "图片读取工具"
 }
