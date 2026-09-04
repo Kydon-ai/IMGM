@@ -97,6 +97,8 @@ export class DeepSeekClient implements RagChatModel {
     if (!content) {
       throw new Error("DeepSeek 未返回可解析内容");
     }
+    console.log('deepseek message:',messages)
+    console.log('deepseek 回答内容：',content)
     return parseJsonObject<T>(content);
   }
 

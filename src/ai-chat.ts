@@ -200,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const requestHistory = history.slice(-20);
     history.push({ role: "user", content: message });
+    console.log('查看发送消息：',history)
     appendMessage("user", message);
     input.value = "";
     resizeInput();

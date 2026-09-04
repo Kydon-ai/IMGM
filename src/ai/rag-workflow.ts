@@ -29,10 +29,11 @@ const RagState = Annotation.Root({
 /** LLM 解析失败时只保留原始查询，不再使用本地关键词猜类别或颜色。 */
 export function buildFallbackIntent(message: string): SearchIntent {
   const result: SearchIntent = {
-    shouldSearch: false,
+    shouldSearch: true,
     query: message,
   };
 
+  console.log("buildFallbackIntent result:",result)
   return result;
 }
 
@@ -66,10 +67,10 @@ function buildIntentMessages(request: AiChatRequest): DeepSeekMessage[] {
     {
       role: "system",
       content:
-        "你是图片检索意图解析器。必须只输出一个 JSON 对象，不要输出 Markdown、解释或对象之外的内容。" +
+        "你是图片检索意图解析器。必须只输出一个 json 对象，不要输出 Markdown、解释或对象之外的内容。" +
         'JSON 字段必须为 shouldSearch、query、category、color、animated、transparent；没有对应条件时使用 null。' +
-        "category 和 color 都是自由文本，不要从任何固定类别列表中选择，也不要因为本地没有该类别就改写或拒绝；没有提及时返回 null。" +
-        "query 应保留用户真正想搜索的视觉描述；用户只是闲聊时 shouldSearch=false，否则为 true。",
+        "请结合历史聊天记录和当前用户消息生成完整的检索意图。历史消息中仍然有效的条件要保留，当前消息提出的新条件优先覆盖冲突条件；" +
+        "不要把助手的建议当成用户的搜索条件。query 应整合用户分散在多轮对话中的视觉描述；用户只是闲聊时 shouldSearch=false，否则为 true。",
     },
     ...request.history.slice(-20),
     { role: "user", content: request.message },
@@ -81,17 +82,19 @@ function buildAnswerMessages(request: AiChatRequest, images: ImageSearchHit[]): 
   const context = images.length
     ? images.map((item, index) => `${index + 1}. ${item.fileName}｜类别:${item.category}｜标签:${item.tags.join("、")}`).join("\n")
     : "本轮没有检索到图片。";
-  return [
+  const answer_messages: DeepSeekMessage[] = [
     {
       role: "system",
       content:
-        "你是 IMGM 图片助手。结合检索结果简洁回答用户，并说明已在右侧展示匹配图片。" +
-        "不要编造未提供的文件；如果没有结果，给出可执行的改写建议。\n\n检索上下文：\n" +
+        "你是 IMGM 图片助手。结合检索结果简洁回答用户，并说明已在左侧尽可能展示最匹配的图片。" +
+        "并对搜索结果进行轻微的总结。\n\n检索上下文：\n" +
         context,
     },
-    ...request.history.slice(-10),
+    ...request.history.slice(-20),
     { role: "user", content: request.message },
   ];
+  console.log("重新整理消息：",answer_messages)
+  return answer_messages
 }
 
 /** 创建由 LangGraph 编排的图片 RAG 工作流。 */
@@ -108,8 +111,10 @@ export function createImageRagWorkflow(model: RagChatModel, retriever: ImageRetr
 
   const retrieveImages = async (state: typeof RagState.State): Promise<Partial<typeof RagState.State>> => {
     if (!state.intent.shouldSearch) {
+      console.log("not should sesarch!!!")
       return { images: [] };
     }
+    console.log("should be sesarched!!!",state.intent)
     state.emit({ requestId: state.request.requestId, type: "status", message: "正在 SQLite 中检索图片…" });
     const images = await retriever.search(state.intent, 8);
     state.emit({ requestId: state.request.requestId, type: "images", images });

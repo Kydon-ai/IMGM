@@ -82,9 +82,9 @@ test("LangGraph 工作流应先检索再流式回答", async () => {
   assert.deepEqual(events, ["status", "status", "images", "status", "chunk", "chunk"]);
 });
 
-test("LLM 意图解析失败时不再用本地关键词猜类别和颜色", () => {
+test("LLM 意图解析失败时应继续使用原始查询检索", () => {
   assert.deepEqual(buildFallbackIntent("找蓝色咖波"), {
-    shouldSearch: false,
+    shouldSearch: true,
     query: "找蓝色咖波",
   });
 });
