@@ -27,6 +27,10 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /id="settings-popover"[\s\S]*data-settings-tab="llm"/);
   assert.match(html, /id="llm-active-provider"/);
   assert.match(html, /id="llm-provider-list"/);
+  assert.match(html, /id="llm-provider-template-dialog"/);
+  assert.match(html, /data-provider-template="openai"/);
+  assert.match(html, /data-provider-template="deepseek"/);
+  assert.match(html, /data-provider-template="custom"/);
   assert.match(html, /id="search-history-limit"/);
   assert.match(html, /data-shortcut-action="startSearch"/);
   assert.match(html, /data-shortcut-action="switchMenu"/);
@@ -48,6 +52,9 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(domSource, /defaultRirUrl/);
   assert.match(domSource, /enabled\.type = "radio"/);
   assert.match(domSource, /syncProviderActivation/);
+  assert.match(domSource, /LLM_PROVIDER_PRESETS/);
+  assert.match(domSource, /closeProviderTemplate/);
+  assert.match(domSource, /window\.dispatchEvent\(new CustomEvent\("app-settings-changed"[\s\S]*?closePopover\(\)/);
 
   const preloadSource = fs.readFileSync(path.resolve(process.cwd(), "src/preload.ts"), "utf8");
   assert.match(preloadSource, /local: \{[^}]*pageSize: 8/);

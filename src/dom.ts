@@ -68,6 +68,35 @@ type SettingsSnapshot = {
 
 type ShortcutAction = keyof SettingsSnapshot["shortcuts"];
 
+type LlmProviderPreset = {
+  name: string;
+  baseUrl: string;
+  model: string;
+};
+
+const LLM_PROVIDER_PRESETS: Record<string, LlmProviderPreset> = {
+  openai: {
+    name: "OpenAI",
+    baseUrl: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+  },
+  deepseek: {
+    name: "DeepSeek",
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-chat",
+  },
+  qwen: {
+    name: "阿里云百炼",
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: "qwen-plus",
+  },
+  custom: {
+    name: "其他供应商",
+    baseUrl: "",
+    model: "",
+  },
+};
+
 const DEFAULT_SHORTCUTS: SettingsSnapshot["shortcuts"] = {
   startSearch: "Ctrl+Enter",
   refreshGallery: "Ctrl+R",
@@ -519,6 +548,9 @@ async function bindSettingsDialog(): Promise<void> {
   const activeProviderSelect = getElementByIdOrThrow<HTMLSelectElement>("llm-active-provider");
   const providerList = getElementByIdOrThrow<HTMLDivElement>("llm-provider-list");
   const providerStatus = getElementByIdOrThrow<HTMLElement>("llm-settings-status");
+  const providerTemplateDialog = getElementByIdOrThrow<HTMLDivElement>("llm-provider-template-dialog");
+  const providerTemplateClose = getElementByIdOrThrow<HTMLButtonElement>("llm-provider-template-close");
+  const providerTemplateCancel = getElementByIdOrThrow<HTMLButtonElement>("llm-provider-template-cancel");
   const historyLimitInput = getElementByIdOrThrow<HTMLInputElement>("search-history-limit");
   const historyLimitSummary = getElementByIdOrThrow<HTMLElement>("settings-history-limit-summary");
   const activeLlmSummary = getElementByIdOrThrow<HTMLElement>("settings-active-llm");
@@ -769,7 +801,12 @@ async function bindSettingsDialog(): Promise<void> {
     }
   };
 
+  const closeProviderTemplate = (): void => {
+    providerTemplateDialog.hidden = true;
+  };
+
   const closePopover = (): void => {
+    closeProviderTemplate();
     settingsPopover.hidden = true;
     settingsButton.setAttribute("aria-expanded", "false");
   };
@@ -802,6 +839,7 @@ async function bindSettingsDialog(): Promise<void> {
       activeLlmSummary.textContent = activeProvider?.name || "未配置";
       setStatus(settingsStatus, "设置已保存", "success");
       window.dispatchEvent(new CustomEvent("app-settings-changed", { detail: saved }));
+      closePopover();
     } catch (error) {
       setStatus(settingsStatus, error instanceof Error ? error.message : String(error), "error");
     } finally {
@@ -830,16 +868,46 @@ async function bindSettingsDialog(): Promise<void> {
     if (!currentAppSettings) {
       return;
     }
+    providerTemplateDialog.hidden = false;
+    providerTemplateClose.focus();
+  });
+
+  const addProviderFromPreset = (presetId: string): void => {
+    const preset = LLM_PROVIDER_PRESETS[presetId];
+    if (!preset || !currentAppSettings) {
+      return;
+    }
     const providers = collectProviderCards();
     providers.push({
       id: crypto.randomUUID(),
-      name: "新供应商",
-      baseUrl: "https://api.openai.com/v1",
-      model: "",
+      name: preset.name,
+      baseUrl: preset.baseUrl,
+      model: preset.model,
       apiKey: "",
       enabled: false,
     });
     renderProviders(providers, activeProviderSelect.value);
+    closeProviderTemplate();
+    setStatus(providerStatus, `${preset.name} 模板已添加，请填写 API 密钥后保存`, "success");
+  };
+
+  document.querySelectorAll<HTMLButtonElement>("[data-provider-template]").forEach((templateButton) => {
+    templateButton.addEventListener("click", () => {
+      const presetId = templateButton.dataset.providerTemplate;
+      if (presetId) {
+        addProviderFromPreset(presetId);
+      }
+    });
+  });
+
+  providerTemplateClose.addEventListener("click", closeProviderTemplate);
+  providerTemplateCancel.addEventListener("click", closeProviderTemplate);
+  providerTemplateDialog.querySelector<HTMLElement>("[data-provider-template-close]")?.addEventListener("click", closeProviderTemplate);
+  providerTemplateDialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeProviderTemplate();
+    }
   });
 
   consoleToggle.addEventListener("change", async () => {

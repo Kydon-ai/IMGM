@@ -2119,6 +2119,119 @@
             flex: 1;
         }
 
+        .llm-provider-template-dialog {
+            position: absolute;
+            z-index: 4;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(15, 24, 42, 0.2);
+        }
+
+        .llm-provider-template-dialog[hidden] {
+            display: none;
+        }
+
+        .llm-provider-template-backdrop {
+            position: absolute;
+            inset: 0;
+        }
+
+        .llm-provider-template-panel {
+            position: relative;
+            width: min(520px, 100%);
+            padding: 20px;
+            border: 1px solid #dce4f0;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 18px 50px rgba(23, 39, 72, 0.22);
+        }
+
+        .llm-provider-template-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .llm-provider-template-header h4 {
+            margin: 0 0 5px;
+            color: #263957;
+            font-size: 16px;
+        }
+
+        .llm-provider-template-header p {
+            margin: 0;
+            color: #8190a7;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .llm-provider-template-close {
+            flex: 0 0 auto;
+            width: 27px;
+            height: 27px;
+            border: 0;
+            border-radius: 7px;
+            color: #65738b;
+            background: #f1f4f9;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .llm-provider-template-close:hover {
+            color: #2f5ae0;
+            background: #eaf0ff;
+        }
+
+        .llm-provider-template-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .llm-provider-template-option {
+            display: flex;
+            min-height: 82px;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 12px 13px;
+            border: 1px solid #dfe6f1;
+            border-radius: 10px;
+            color: #31415c;
+            background: #fbfcff;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .llm-provider-template-option:hover {
+            border-color: #9eb2f3;
+            background: #f2f5ff;
+            box-shadow: 0 4px 12px rgba(70, 100, 216, 0.1);
+        }
+
+        .llm-provider-template-option strong {
+            margin-bottom: 5px;
+            color: #304a98;
+            font-size: 13px;
+        }
+
+        .llm-provider-template-option span {
+            color: #8491a8;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .llm-provider-template-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
         @media (max-width: 760px) {
             .settings-panel {
                 width: calc(100vw - 24px);
@@ -2411,6 +2524,39 @@
                     <button id="settings-save" class="settings-action-button primary" type="button">保存设置</button>
                 </footer>
             </section>
+            <div id="llm-provider-template-dialog" class="llm-provider-template-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="llm-provider-template-title">
+                <div class="llm-provider-template-backdrop" data-provider-template-close></div>
+                <section class="llm-provider-template-panel">
+                    <header class="llm-provider-template-header">
+                        <div>
+                            <h4 id="llm-provider-template-title">选择供应商模板</h4>
+                            <p>选择后会自动填入可修改的 API 地址和模型名称，API 密钥需要你自行填写。</p>
+                        </div>
+                        <button id="llm-provider-template-close" class="llm-provider-template-close" type="button" aria-label="关闭供应商模板">×</button>
+                    </header>
+                    <div class="llm-provider-template-list">
+                        <button class="llm-provider-template-option" type="button" data-provider-template="openai">
+                            <strong>OpenAI</strong>
+                            <span>api.openai.com · gpt-4o-mini</span>
+                        </button>
+                        <button class="llm-provider-template-option" type="button" data-provider-template="deepseek">
+                            <strong>DeepSeek</strong>
+                            <span>api.deepseek.com · deepseek-chat</span>
+                        </button>
+                        <button class="llm-provider-template-option" type="button" data-provider-template="qwen">
+                            <strong>阿里云百炼</strong>
+                            <span>OpenAI 兼容模式 · qwen-plus</span>
+                        </button>
+                        <button class="llm-provider-template-option" type="button" data-provider-template="custom">
+                            <strong>其他供应商</strong>
+                            <span>自定义 API 地址和模型名称</span>
+                        </button>
+                    </div>
+                    <footer class="llm-provider-template-footer">
+                        <button id="llm-provider-template-cancel" class="settings-action-button" type="button">取消</button>
+                    </footer>
+                </section>
+            </div>
         </div>
     </aside>
 
