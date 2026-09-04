@@ -44,7 +44,7 @@ function isHorizontalRule(line: string): boolean {
 }
 
 /** 将常用 Markdown 转为安全 HTML；原始 HTML 和不安全链接会按普通文本处理。 */
-export function markdownToHtml(markdown: string): string {
+function markdownToHtml(markdown: string): string {
   const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
   const blocks: string[] = [];
   let paragraph: string[] = [];
@@ -157,6 +157,11 @@ export function markdownToHtml(markdown: string): string {
 }
 
 /** 渲染 AI 回复；HTML 只来自上面的安全 Markdown 转换结果。 */
-export function renderMarkdown(element: HTMLElement, markdown: string): void {
+function renderMarkdown(element: HTMLElement, markdown: string): void {
   element.innerHTML = markdownToHtml(markdown);
 }
+
+window.imgmMarkdownRenderer = {
+  markdownToHtml,
+  renderMarkdown,
+};

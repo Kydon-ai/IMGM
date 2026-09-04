@@ -1,5 +1,3 @@
-import { renderMarkdown } from "./ai-markdown";
-
 type ChatRole = "user" | "assistant";
 
 type ChatMessage = {
@@ -55,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const element = document.createElement("div");
     element.className = `ai-message ${role}`;
     if (role === "assistant") {
-      renderMarkdown(element, content);
+      window.imgmMarkdownRenderer.renderMarkdown(element, content);
     } else {
       element.textContent = content;
     }
@@ -159,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
         assistantBubble = appendMessage("assistant", "");
       }
       assistantContent += event.chunk;
-      renderMarkdown(assistantBubble, assistantContent);
+      window.imgmMarkdownRenderer.renderMarkdown(assistantBubble, assistantContent);
       messages.scrollTop = messages.scrollHeight;
     } else if (event.type === "error") {
       status.textContent = event.message || "AI 请求失败";
@@ -197,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
         assistantBubble = appendMessage("assistant", assistantAnswer);
       } else if (response.answer && response.answer !== assistantContent) {
         assistantContent = response.answer;
-        renderMarkdown(assistantBubble, assistantContent);
+        window.imgmMarkdownRenderer.renderMarkdown(assistantBubble, assistantContent);
       }
       history.push({ role: "assistant", content: assistantContent });
       const responseImages = Array.isArray(response.images) ? response.images as ChatSearchHit[] : [];

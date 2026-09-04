@@ -14,6 +14,7 @@ test("AI 面板必需元素和脚本应只出现一次", () => {
   assert.match(html, /<aside class="ai-panel"/);
   assert.match(html, /\.img-item\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
   assert.match(html, /<p id="ai-status" class="ai-status">/);
+  assert.match(html, /<script src="\.\/dist\/ai-markdown\.js"><\/script>/);
   assert.match(html, /<script src="\.\/dist\/ai-chat\.js"><\/script>/);
   assert.match(html, /id="add-embedding"/);
   assert.match(html, /id="embedding-index-dialog"/);
