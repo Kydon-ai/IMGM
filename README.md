@@ -673,32 +673,47 @@ MCP 进程使用本地模型进行向量计算，因此启动前必须保证模�
 | `npm run make:linux` | 生成 Linux deb 和 rpm |
 | `npm run make` | 生成 Windows 和 Linux 包 |
 
-# 10.项目文件说明 🕮
+# 8.项目目录结构 🕮
 
-| 文件或目录 | 作用 |
-| --- | --- |
-| `index.html` | 桌面应用页面结构、样式和挂载脚本 |
-| `src/main.ts` | Electron 主进程、窗口、设置、剪贴板和 IPC |
-| `src/preload.ts` | 向渲染进程暴露安全的 Electron 能力 |
-| `src/dom.ts` | 图片库、RIR、索引弹窗、设置和快捷键交互 |
-| `src/ai-chat.ts` | AI 对话界面、流式事件和搜索结果回放 |
-| `src/ai/rag-workflow.ts` | LLM 意图解析、图片检索和回答编排 |
-| `src/ai/image-indexer.ts` | 图片扫描、索引状态 Diff 和向量生成任务 |
-| `src/ai/deepseek-client.ts` | OpenAI 兼容聊天接口、JSON 和 SSE 解析 |
-| `src/mcp/sqlite-image-store.ts` | SQLite 图片数据库、向量计算和混合排序 |
-| `src/mcp/server.ts` | MCP Server 入口和 `search_images` 工具 |
-| `src/cli/download-models.ts` | 预下载本地模型 |
-| `src/cli/import-images-to-db.ts` | 批量导入图片和生成索引 |
-| `src/cli/rebuild-image-index.ts` | 重建已有图片向量 |
-| `electron-builder.yml` | Windows、Linux、macOS 打包配置和模型资源配置 |
-| `.github/workflows/ci.yml` | 自动编译、原生模块修复和测试 |
-| `.github/workflows/release.yml` | 自动下载模型、跨平台打包和发布 Release |
-| `data/` | 本地数据库、模型和数据集，不提交到 Git |
-| `review/` | 开发过程中的问题复盘和解决记录 |
+项目的主要目录和文件关系如下：
 
-# 11.常见问题排查 📝
+```text
+IMGM/
+├── index.html                         # 桌面应用页面结构、样式和挂载脚本
+├── src/
+│   ├── main.ts                         # Electron 主进程、窗口、设置、剪贴板和 IPC
+│   ├── preload.ts                      # 向渲染进程暴露安全的 Electron 能力
+│   ├── dom.ts                          # 图片库、RIR、索引弹窗、设置和快捷键交互
+│   ├── ai-chat.ts                      # AI 对话界面、流式事件和搜索结果回放
+│   ├── ai/
+│   │   ├── rag-workflow.ts             # LLM 意图解析、图片检索和回答编排
+│   │   ├── image-indexer.ts            # 图片扫描、索引状态 Diff 和向量生成任务
+│   │   └── deepseek-client.ts          # OpenAI 兼容聊天接口、JSON 和 SSE 解析
+│   ├── mcp/
+│   │   ├── sqlite-image-store.ts       # SQLite 图片数据库、向量计算和混合排序
+│   │   └── server.ts                   # MCP Server 入口和 `search_images` 工具
+│   └── cli/
+│       ├── download-models.ts          # 预下载本地模型
+│       ├── import-images-to-db.ts      # 批量导入图片和生成索引
+│       └── rebuild-image-index.ts      # 重建已有图片向量
+├── electron-builder.yml                # Windows、Linux、macOS 打包配置和模型资源配置
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                      # 自动编译、原生模块修复和测试
+│       └── release.yml                 # 自动下载模型、跨平台打包和发布 Release
+├── data/                               # 本地数据库、模型和数据集，不提交到 Git
+└── review/                             # 开发过程中的问题复盘和解决记录
+```
 
-## 11.1 AI 提示数据库不存在
+阅读这棵目录树时，可以按下面的职责划分理解项目：
+
+- `src/`：应用源码；其中 `ai/` 负责 AI 检索流程，`mcp/` 负责图片数据库和 MCP 服务，`cli/` 负责命令行任务。
+- `.github/workflows/`：持续集成和 Release 自动化脚本。
+- `data/`：运行时产生的本地数据；`review/`：开发记录和问题复盘。
+
+# 9.常见问题排查 📝
+
+## 9.1 AI 提示数据库不存在
 
 正常情况下，程序会自动创建空数据库。如果看到数据库路径错误，请检查：
 
