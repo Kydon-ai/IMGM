@@ -1,7 +1,8 @@
 <div align="center">
     <img width="200px" height="200px" src="https://raw.githubusercontent.com/Kydon-ai/IMGM/master/public/img/IMGM.png" />
     <div>
-        <a href="README.md" target="_blank">中文</a>
+        <a href="README.md" target="_blank">中文</a> |
+        <a href="README_EN.md" target="_blank">English</a>
     </div>
     <br />
     <div>
