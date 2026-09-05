@@ -28,6 +28,7 @@ IMGM 目前包含2个相互独立的使用场景：
 - **本地图片库**：扫描本机目录，按文件名进行模糊搜索、分页浏览和复制。并且可自行配置LLM API激活AI助手，根据本地图片建立的文本向量和视觉向量，通过自然语言进行混合检索。
 - **远程 RIR**：读取用户提供的远程 JavaScript 图片清单，浏览和复制远程图片；RIR 不使用本地图片库的列表和缓存。
 
+![项目主界面](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_002.png)
 
 ## 1.1 数据和隐私说明
 
@@ -164,11 +165,13 @@ npm test
 
 左侧菜单包含“图片库”和“远程 RIR”，右下角是“设置”。图片库和 RIR 使用独立的数据列表，不会因为切换模块而互相覆盖。
 
+![项目图片库界面](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_001.png)
+
 图片库的基本操作顺序：
 
 1. 启动应用。
 2. 打开左下角“设置”，在“LLM 设置”中添加一个供应商，填写 API 地址、模型和 API 密钥。
-
+![LLM配置](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_003.png)
 3. 点击“测试连通性”，测试通过即可使用。
 4. 返回“图片库”，点击“选择文件夹”，选中一个有图片资源的目录。
 5. 点击“开始搜图”，确认图片可以正常扫描和浏览。
@@ -180,6 +183,7 @@ npm test
 
 ## 4.2 图片库搜索结果缓存列表
 
+![项目图片库缓存列表切换按钮](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_005.png)
 扫描目录和 AI 自动检索结果都会进入同一个搜索结果历史列表：
 
 - 每次产生新结果，都会追加到列表末尾；
@@ -195,6 +199,7 @@ npm test
 
 图片索引管理用于决定哪些图片可以被 AI 检索。操作步骤如下：
 
+![索引图片](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_004.png)
 1. 先选择一个有效的本地文件夹。
 2. 点击工具栏中的“索引图片”按钮。
 3. 弹窗按照目录路径分组列出扫描到的图片。
@@ -207,8 +212,8 @@ npm test
    - 取消勾选的图片会从图片索引中删除；
    - 没有变化的图片不会重复处理。
 9. 任务提交后弹窗关闭，右下角显示处理进度、百分比和当前文件名。
+![索引进度](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_006.png)
 10. 任务完成后，新的图片即可被 AI 图片助手检索。
-
 
 > 索引过程中建议不要删除或移动正在处理的图片。
 
@@ -216,6 +221,7 @@ npm test
 
 RIR（Remote Image Retrieval）是一种远程图片资源约定,用于后续拓展从远端读取图片。RIR 服务端暴露一个 JavaScript 模块，模块中包含图片相对路径列表和图片资源根地址，IMGM 读取该模块后即可在桌面端分页查看和复制远程图片。
 
+![RIR模块](https://github.com/Kydon-ai/IMGM/blob/master/public/img/IMGM_007.png)
 RIR 与本地图片库历史完全独立：
 
 - 使用独立的 RIR 路径列表和图片列表；
