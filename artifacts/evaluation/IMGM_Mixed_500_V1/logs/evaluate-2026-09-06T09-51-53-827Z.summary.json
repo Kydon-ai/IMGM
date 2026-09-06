@@ -1,0 +1,44 @@
+{
+  "formatVersion": 1,
+  "metric": "Hit@8",
+  "runId": "2026-09-06T09-51-53-827Z",
+  "requestedDatasetName": "IMGM_Mixed_500_V1",
+  "datasetDirectory": "IMGM_Mixed_500_V1",
+  "generatedAt": "2026-09-06T09:51:54.382Z",
+  "topK": 8,
+  "queryCount": 1,
+  "completedQueryCount": 1,
+  "errorCount": 0,
+  "galleryCount": 1594,
+  "database": {
+    "databasePath": "E:\\projectWorkspace\\IMGM\\0901\\IMGM\\artifacts\\data\\imgm_mixed_500_v1.db",
+    "indexedImageCount": 1594,
+    "rebuilt": true
+  },
+  "hitCount": 1,
+  "missCount": 0,
+  "hitAt8": 1,
+  "relevantCount": 1,
+  "returnedRelevantCount": 1,
+  "recallAt8": 1,
+  "averageQueryDurationMs": 550,
+  "durationMs": 555,
+  "logFile": "IMGM_Mixed_500_V1/logs/evaluate-2026-09-06T09-51-53-827Z.jsonl",
+  "sourceSummary": {
+    "name": "imgm_mixed_500_v1",
+    "formatVersion": 1,
+    "metric": "Hit@8",
+    "queryCount": 500,
+    "candidateImageCount": 1594,
+    "relevantReferenceCount": 612,
+    "uniqueQueryTextCount": 500,
+    "ratioComposition": {
+      "1:1": 406,
+      "1:2": 85,
+      "1:4": 9
+    },
+    "randomSeed": 20260906,
+    "queryFile": "queries.jsonl",
+    "definition": "A mixed 500-query Hit@8 evaluation set. Query texts and semantic groups are unique across all three ratios."
+  }
+}

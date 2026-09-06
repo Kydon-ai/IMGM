@@ -14,7 +14,7 @@
     "zod": "^3.25.76"
   },
   "name": "workspace",
-  "version": "3.0.0",
+  "version": "3.0.3",
   "main": "dist/main.js",
   "devDependencies": {
     "@electron-forge/cli": "8.0.0-alpha.10",
@@ -40,6 +40,7 @@
     "images:import": "npm run build && node scripts/run-electron-node.cjs dist/cli/import-images-to-db.js",
     "images:reindex": "npm run build && node scripts/run-electron-node.cjs dist/cli/rebuild-image-index.js",
     "models:download": "npm run build && node dist/cli/download-models.js",
+    "evaluate": "npm run build && node scripts/run-electron-node.cjs artifacts/evaluation/evaluate-dataset.cjs",
     "eval:retrieval": "npm run build && node scripts/run-electron-node.cjs dist/cli/evaluate-retrieval.js",
     "mcp:build": "npm run build",
     "mcp": "node scripts/run-electron-node.cjs dist/mcp/server.js",

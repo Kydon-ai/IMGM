@@ -1,0 +1,39 @@
+{
+  "formatVersion": 1,
+  "metric": "Hit@8",
+  "runId": "2026-09-06T08-53-37-847Z",
+  "requestedDatasetName": "IMGM_Mixed_500_V1",
+  "datasetDirectory": "IMGM_Mixed_500_V1",
+  "generatedAt": "2026-09-06T08:53:40.867Z",
+  "topK": 8,
+  "queryCount": 1,
+  "completedQueryCount": 1,
+  "errorCount": 0,
+  "galleryCount": 1594,
+  "hitCount": 0,
+  "missCount": 1,
+  "hitAt8": 0,
+  "relevantCount": 1,
+  "returnedRelevantCount": 0,
+  "recallAt8": 0,
+  "averageQueryDurationMs": 3015,
+  "durationMs": 3020,
+  "logFile": "IMGM_Mixed_500_V1/logs/evaluate-2026-09-06T08-53-37-847Z.jsonl",
+  "sourceSummary": {
+    "name": "imgm_mixed_500_v1",
+    "formatVersion": 1,
+    "metric": "Hit@8",
+    "queryCount": 500,
+    "candidateImageCount": 1594,
+    "relevantReferenceCount": 612,
+    "uniqueQueryTextCount": 500,
+    "ratioComposition": {
+      "1:1": 406,
+      "1:2": 85,
+      "1:4": 9
+    },
+    "randomSeed": 20260906,
+    "queryFile": "queries.jsonl",
+    "definition": "A mixed 500-query Hit@8 evaluation set. Query texts and semantic groups are unique across all three ratios."
+  }
+}

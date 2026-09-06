@@ -3,6 +3,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import Database from "better-sqlite3";
 import { embedImage, embedTexts } from "../mcp/sqlite-embedding";
+import { buildSearchableText, deriveDisplayName } from "./searchable-text";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]);
 
@@ -53,11 +54,6 @@ function vectorToBuffer(vector: number[]): Buffer {
   return Buffer.from(new Float32Array(vector).buffer);
 }
 
-function deriveNameFromFilename(filename: string): string {
-  const basename = path.parse(filename).name;
-  return basename.split("_").at(-1)?.trim() || basename;
-}
-
 function categoryForPath(rootPath: string, imagePath: string): string {
   const relative = path.relative(rootPath, imagePath);
   const firstPart = relative.split(path.sep)[0];
@@ -74,7 +70,8 @@ function ensureIndexSchema(database: Database.Database): void {
       image_path TEXT NOT NULL,
       embedding BLOB NOT NULL,
       image_embedding BLOB,
-      name_embedding BLOB
+      name_embedding BLOB,
+      searchable_text TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_images_path ON images(image_path);
     CREATE INDEX IF NOT EXISTS idx_images_category ON images(category);
@@ -88,6 +85,7 @@ function ensureIndexSchema(database: Database.Database): void {
     category: "ALTER TABLE images ADD COLUMN category TEXT NOT NULL DEFAULT 'unknown'",
     image_embedding: "ALTER TABLE images ADD COLUMN image_embedding BLOB",
     name_embedding: "ALTER TABLE images ADD COLUMN name_embedding BLOB",
+    searchable_text: "ALTER TABLE images ADD COLUMN searchable_text TEXT NOT NULL DEFAULT ''",
   };
   for (const [column, statement] of Object.entries(additions)) {
     if (!columns.has(column)) {
@@ -209,21 +207,34 @@ export async function applyImageIndexSelection(options: {
       options.onProgress({ phase: "processing", currentPath: row.image_path, completed, total, added, removed, unchanged, message: "正在移除图片索引" });
     }
 
-    const names = additions.map((filePath) => deriveNameFromFilename(path.basename(filePath)));
+    const names = additions.map((filePath) => deriveDisplayName(path.basename(filePath)));
+    const searchableTexts = additions.map((filePath) => buildSearchableText({
+      fileName: path.basename(filePath),
+      category: categoryForPath(rootPath, filePath),
+    }));
     const nameVectors: number[][] = [];
-    for (let offset = 0; offset < names.length; offset += 32) {
-      nameVectors.push(...await embedTexts(names.slice(offset, offset + 32)));
+    for (let offset = 0; offset < searchableTexts.length; offset += 32) {
+      nameVectors.push(...await embedTexts(searchableTexts.slice(offset, offset + 32)));
     }
     const insert = database.prepare(`
-      INSERT INTO images (original_filename, name, category, image_path, embedding, image_embedding, name_embedding)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO images (original_filename, name, category, image_path, embedding, image_embedding, name_embedding, searchable_text)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const [index, filePath] of additions.entries()) {
       options.onProgress({ phase: "processing", currentPath: filePath, completed, total, added, removed, unchanged, message: "正在生成图片向量" });
       const imageVector = await embedImage(filePath);
       const imageBuffer = vectorToBuffer(imageVector);
       const nameBuffer = vectorToBuffer(nameVectors[index] || []);
-      insert.run(path.basename(filePath), names[index] || path.basename(filePath), categoryForPath(rootPath, filePath), filePath, imageBuffer, imageBuffer, nameBuffer);
+      insert.run(
+        path.basename(filePath),
+        names[index] || path.basename(filePath),
+        categoryForPath(rootPath, filePath),
+        filePath,
+        imageBuffer,
+        imageBuffer,
+        nameBuffer,
+        searchableTexts[index] || names[index] || path.basename(filePath),
+      );
       added += 1;
       completed += 1;
       options.onProgress({ phase: "processing", currentPath: filePath, completed, total, added, removed, unchanged, message: "正在写入图片索引" });

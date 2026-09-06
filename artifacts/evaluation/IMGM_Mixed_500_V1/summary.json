@@ -1,0 +1,17 @@
+{
+  "name":"imgm_mixed_500_v1",
+  "formatVersion": 1,
+  "metric": "Hit@8",
+  "queryCount": 500,
+  "candidateImageCount": 1594,
+  "relevantReferenceCount": 612,
+  "uniqueQueryTextCount": 500,
+  "ratioComposition": {
+    "1:1": 406,
+    "1:2": 85,
+    "1:4": 9
+  },
+  "randomSeed": 20260906,
+  "queryFile": "queries.jsonl",
+  "definition": "A mixed 500-query Hit@8 evaluation set. Query texts and semantic groups are unique across all three ratios."
+}

@@ -3,21 +3,18 @@ import path from "path";
 import Database from "better-sqlite3";
 import { getAiConfig } from "../ai/config";
 import { embedImage, embedTexts } from "../mcp/sqlite-embedding";
+import { buildSearchableText, deriveDisplayName } from "../ai/searchable-text";
 
 type ImageRow = {
   id: number;
   original_filename: string;
   name: string;
   image_path: string;
+  category?: string;
 };
 
 function vectorToBuffer(vector: number[]): Buffer {
   return Buffer.from(new Float32Array(vector).buffer);
-}
-
-function deriveNameFromFilename(filename: string): string {
-  const basename = path.parse(filename).name;
-  return basename.split("_").at(-1)?.trim() || basename;
 }
 
 function resolveImagePath(imagePath: string, databasePath: string): string {
@@ -43,7 +40,8 @@ function ensureIndexColumns(database: Database.Database): void {
       image_path TEXT NOT NULL,
       embedding BLOB NOT NULL,
       image_embedding BLOB,
-      name_embedding BLOB
+      name_embedding BLOB,
+      searchable_text TEXT NOT NULL DEFAULT ''
     );
   `);
 
@@ -55,6 +53,7 @@ function ensureIndexColumns(database: Database.Database): void {
     category: "ALTER TABLE images ADD COLUMN category TEXT NOT NULL DEFAULT 'unknown'",
     image_embedding: "ALTER TABLE images ADD COLUMN image_embedding BLOB",
     name_embedding: "ALTER TABLE images ADD COLUMN name_embedding BLOB",
+    searchable_text: "ALTER TABLE images ADD COLUMN searchable_text TEXT NOT NULL DEFAULT ''",
   };
 
   for (const [column, statement] of Object.entries(additions)) {
@@ -77,7 +76,7 @@ async function main(): Promise<void> {
   try {
     ensureIndexColumns(database);
     const rows = database.prepare(`
-      SELECT id, COALESCE(original_filename, name) AS original_filename, name, image_path
+      SELECT id, COALESCE(original_filename, name) AS original_filename, name, image_path, category
       FROM images
       ORDER BY id
     `).all() as ImageRow[];
@@ -87,17 +86,21 @@ async function main(): Promise<void> {
       return;
     }
 
-    const names = rows.map((row) => deriveNameFromFilename(row.original_filename || row.name));
+    const names = rows.map((row) => deriveDisplayName(row.original_filename || row.name));
+    const searchableTexts = rows.map((row) => buildSearchableText({
+      fileName: row.original_filename || row.name,
+      category: row.category,
+    }));
     const nameVectors: number[][] = [];
     const batchSize = 32;
     console.log(`正在生成 ${rows.length} 条名称向量...`);
     for (let offset = 0; offset < names.length; offset += batchSize) {
-      nameVectors.push(...await embedTexts(names.slice(offset, offset + batchSize)));
+      nameVectors.push(...await embedTexts(searchableTexts.slice(offset, offset + batchSize)));
     }
 
     const update = database.prepare(`
       UPDATE images
-      SET name = ?, embedding = ?, image_embedding = ?, name_embedding = ?
+      SET name = ?, embedding = ?, image_embedding = ?, name_embedding = ?, searchable_text = ?
       WHERE id = ?
     `);
 
@@ -115,7 +118,14 @@ async function main(): Promise<void> {
       const imageVector = await embedImage(imagePath);
       const imageBuffer = vectorToBuffer(imageVector);
       const nameBuffer = vectorToBuffer(nameVectors[index] || []);
-      update.run(names[index] || row.name, imageBuffer, imageBuffer, nameBuffer, row.id);
+      update.run(
+        names[index] || row.name,
+        imageBuffer,
+        imageBuffer,
+        nameBuffer,
+        searchableTexts[index] || names[index] || row.name,
+        row.id,
+      );
       indexed += 1;
     }
 

@@ -45,6 +45,7 @@ type ImageRow = {
   image_path: string;
   image_embedding: Buffer | null;
   name_embedding: Buffer | null;
+  searchable_text: string;
 };
 
 type PreparedSearchItem = ImageRow & {
@@ -70,7 +71,8 @@ function createImageSchema(database: Database.Database): void {
       image_path TEXT NOT NULL,
       embedding BLOB NOT NULL,
       image_embedding BLOB,
-      name_embedding BLOB
+      name_embedding BLOB,
+      searchable_text TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_images_path ON images(image_path);
     CREATE INDEX IF NOT EXISTS idx_images_category ON images(category);
@@ -188,6 +190,7 @@ export class SqliteImageStore {
   private readonly hasOriginalFilenameColumn: boolean;
   private readonly hasImageEmbeddingColumn: boolean;
   private readonly hasNameEmbeddingColumn: boolean;
+  private readonly hasSearchableTextColumn: boolean;
 
   constructor(config: SqliteImageStoreConfig) {
     this.databasePath = path.resolve(config.databasePath);
@@ -214,6 +217,7 @@ export class SqliteImageStore {
     this.hasOriginalFilenameColumn = columns.has("original_filename");
     this.hasImageEmbeddingColumn = columns.has("image_embedding");
     this.hasNameEmbeddingColumn = columns.has("name_embedding");
+    this.hasSearchableTextColumn = columns.has("searchable_text");
   }
 
   get count(): number {
@@ -234,7 +238,7 @@ export class SqliteImageStore {
     const prepared = rows.map((row): PreparedSearchItem => {
       const imageVector = bufferToVector(row.image_embedding);
       const nameVector = bufferToVector(row.name_embedding);
-      const keyword = keywordScore(keywords, row.name);
+      const keyword = keywordScore(keywords, row.searchable_text || row.name);
       return {
         ...row,
         nameScore: cosineSimilarity(queryVector, nameVector),
@@ -294,6 +298,9 @@ export class SqliteImageStore {
     const categoryExpression = this.hasCategoryColumn ? "COALESCE(category, 'unknown')" : "'unknown'";
     const imageEmbedding = this.hasImageEmbeddingColumn ? "COALESCE(image_embedding, embedding)" : "embedding";
     const nameEmbedding = this.hasNameEmbeddingColumn ? "name_embedding" : "NULL";
+    const searchableText = this.hasSearchableTextColumn
+      ? "COALESCE(NULLIF(searchable_text, ''), name)"
+      : "name";
     const where = this.hasCategoryColumn && category ? " WHERE LOWER(category) = LOWER(?)" : "";
 
     return this.db.prepare(`
@@ -304,7 +311,8 @@ export class SqliteImageStore {
         ${categoryExpression} AS category,
         image_path,
         ${imageEmbedding} AS image_embedding,
-        ${nameEmbedding} AS name_embedding
+        ${nameEmbedding} AS name_embedding,
+        ${searchableText} AS searchable_text
       FROM images${where}
     `).all(...(where ? [category] : [])) as ImageRow[];
   }

@@ -3,8 +3,9 @@ dist
 out
 test
 data/
-
+tmp/
 
 .env
 
 development_task/
+artifacts/data/

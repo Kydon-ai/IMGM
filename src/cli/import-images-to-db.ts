@@ -4,6 +4,7 @@ import Database from "better-sqlite3";
 import { collectImageMetadata } from "../ai/metadata";
 import { getAiConfig } from "../ai/config";
 import { embedImage, embedTexts } from "../mcp/sqlite-embedding";
+import { buildSearchableText, deriveDisplayName } from "../ai/searchable-text";
 
 type ImportOptions = {
   rootPath: string;
@@ -20,11 +21,6 @@ function vectorToBuffer(vector: number[]): Buffer {
   return Buffer.from(new Float32Array(vector).buffer);
 }
 
-function deriveNameFromFilename(filename: string): string {
-  const basename = path.parse(filename).name;
-  return basename.split("_").at(-1)?.trim() || basename;
-}
-
 function createSchema(database: Database.Database): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS images (
@@ -35,11 +31,19 @@ function createSchema(database: Database.Database): void {
       image_path TEXT NOT NULL,
       embedding BLOB NOT NULL,
       image_embedding BLOB,
-      name_embedding BLOB
+      name_embedding BLOB,
+      searchable_text TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_images_path ON images(image_path);
     CREATE INDEX IF NOT EXISTS idx_images_category ON images(category);
   `);
+
+  const columns = new Set(
+    (database.prepare("PRAGMA table_info(images)").all() as Array<{ name: string }>).map((column) => column.name),
+  );
+  if (!columns.has("searchable_text")) {
+    database.exec("ALTER TABLE images ADD COLUMN searchable_text TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 async function main(): Promise<void> {
@@ -58,9 +62,13 @@ async function main(): Promise<void> {
   const database = new Database(databasePath);
   try {
     createSchema(database);
-    const names = metadata.map((item) => deriveNameFromFilename(item.fileName));
+    const names = metadata.map((item) => deriveDisplayName(item.fileName));
+    const searchableTexts = metadata.map((item) => buildSearchableText({
+      fileName: item.fileName,
+      category: item.category,
+    }));
     console.log(`正在生成 ${metadata.length} 条名称向量...`);
-    const nameVectors = await embedTexts(names);
+    const nameVectors = await embedTexts(searchableTexts);
     const imageVectors: number[][] = [];
 
     // Vision inference is intentionally sequential. It avoids starting several
@@ -84,13 +92,14 @@ async function main(): Promise<void> {
         image_path,
         embedding,
         image_embedding,
-        name_embedding
+        name_embedding,
+        searchable_text
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const update = database.prepare(`
       UPDATE images
-      SET original_filename = ?, name = ?, category = ?, embedding = ?, image_embedding = ?, name_embedding = ?
+      SET original_filename = ?, name = ?, category = ?, embedding = ?, image_embedding = ?, name_embedding = ?, searchable_text = ?
       WHERE id = ?
     `);
     const write = database.transaction(() => {
@@ -99,14 +108,15 @@ async function main(): Promise<void> {
 
       metadata.forEach((item, index) => {
         const name = names[index] || item.fileName;
+        const searchableText = searchableTexts[index] || name;
         const imageVector = vectorToBuffer(imageVectors[index] || []);
         const nameVector = vectorToBuffer(nameVectors[index] || []);
         const existing = findExisting.get(item.filePath) as { id: number } | undefined;
         if (existing) {
-          update.run(item.fileName, name, item.category, imageVector, imageVector, nameVector, existing.id);
+          update.run(item.fileName, name, item.category, imageVector, imageVector, nameVector, searchableText, existing.id);
           updated += 1;
         } else {
-          insert.run(item.fileName, name, item.category, item.filePath, imageVector, imageVector, nameVector);
+          insert.run(item.fileName, name, item.category, item.filePath, imageVector, imageVector, nameVector, searchableText);
           inserted += 1;
         }
       });
