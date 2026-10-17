@@ -489,7 +489,7 @@ MCP 的检索模式也是混合检索，会结合 CLIP 文本/图片向量和中
 先在 `.env` 中配置数据库路径，然后执行：
 
 ```bash
-npm run mcp:build
+npm run build
 npm run mcp
 ```
 
@@ -537,7 +537,6 @@ MCP 进程使用本地模型进行向量计算，因此启动前必须保证模�
 | `npm run images:import -- <图片目录> [数据库路径]` | 批量导入图片和生成向量 |
 | `npm run images:reindex -- [数据库路径]` | 为已有图片记录重新生成向量 |
 | `npm run eval:retrieval` | 运行检索评测 |
-| `npm run mcp:build` | 编译 MCP Server |
 | `npm run mcp` | 启动 MCP Server |
 | `npm run make:win` | 生成 Windows 安装器 |
 | `npm run make:linux` | 生成 Linux deb 和 rpm |

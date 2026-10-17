@@ -499,7 +499,7 @@ MCP uses the same hybrid retrieval approach, combining CLIP text/image embedding
 Configure the database path in `.env`, then run:
 
 ```bash
-npm run mcp:build
+npm run build
 npm run mcp
 ```
 
@@ -547,7 +547,6 @@ The MCP process uses local models to calculate embeddings. Before starting it, m
 | `npm run images:import -- <image-directory> [database-path]` | Import images in batches and generate embeddings |
 | `npm run images:reindex -- [database-path]` | Regenerate embeddings for existing image records |
 | `npm run eval:retrieval` | Run retrieval evaluation |
-| `npm run mcp:build` | Compile the MCP Server |
 | `npm run mcp` | Start the MCP Server |
 | `npm run make:win` | Generate a Windows installer |
 | `npm run make:linux` | Generate Linux deb and rpm packages |
