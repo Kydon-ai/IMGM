@@ -105,6 +105,10 @@ jobs:
           electron_version="$(node -p "require('./node_modules/electron/package.json').version")"
           npx --no-install electron-rebuild --force --which-module better-sqlite3 --version "$electron_version"
 
+      - name: Inspect Windows output locks
+        if: runner.os == 'Windows'
+        run: node scripts/inspect-output-locks.cjs out/installer
+
       - name: Build platform packages
         run: npx --no-install electron-builder ${{ matrix.build_args }} --publish never
 
